@@ -1,1 +1,5 @@
 .idea
+sqs/target
+sqs/sqs-core/target
+sqs/sqs-autoconfigure/target
+/starters/sqs-starter/target
