@@ -1,7 +1,5 @@
 package org.awsutils.sqs.handler;
 
-
-
 import io.vavr.Tuple2;
 import org.apache.commons.lang3.ArrayUtils;
 import org.awsutils.sqs.exceptions.UtilsException;
@@ -81,7 +79,7 @@ public class MessageHandlerFactoryImpl implements MessageHandlerFactory  {
 
         final MethodLevelSqsMessageHandler<T> sqsMessageHandler = new MethodLevelSqsMessageHandler(sqsMessage,
                 transactionId,
-                (Class) handlerMethod.getParameterTypes()[0],
+                handlerMethod.getParameterTypes()[0],
                 handlerMethod,
                 applicationContext.getBean(handlerMethod.getDeclaringClass()),
                 receiptHandle,

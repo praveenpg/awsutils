@@ -1,8 +1,10 @@
 package org.awsutils.sqs.util;
 
+import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 
+@Getter
 @SuppressWarnings("unchecked")
 public class ApplicationContextUtils {
     private static volatile ApplicationContextUtils INSTANCE;
@@ -30,14 +32,7 @@ public class ApplicationContextUtils {
         return applicationContext.getBean(qualifierName, type);
     }
 
-    public ApplicationContext getApplicationContext() {
-        return applicationContext;
-    }
-
-    public Environment getEnvironment() {
-        return environment;
-    }
-
+    @SuppressWarnings("unused")
     private static void init(final ApplicationContext applicationContext, final Environment environment) {
         if(INSTANCE == null) {
             synchronized (ApplicationContextUtils.class) {
