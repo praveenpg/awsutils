@@ -1,12 +1,13 @@
 package org.awsutils.sqs.autoconfigure;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
 import org.awsutils.sqs.client.SqsMessageClient;
 import org.awsutils.sqs.config.WorkerNodeCheckFunc;
 import org.awsutils.sqs.handler.MessageHandlerFactory;
 import org.awsutils.sqs.listener.SqsMessageListener;
 import org.awsutils.sqs.util.LimitedQueue;
-import org.awsutils.sqs.util.Tuple2;
 import org.awsutils.sqs.util.Utils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -301,12 +302,12 @@ public class SqsMessageListenerInitializer {
                 boolean lockAcquired = semaphore.tryAcquire(SEMAPHORE_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
 
                 if(lockAcquired) {
-                    return Tuple2.of(true, executorService.submit(a::receive));
+                    return Tuple.of(true, executorService.submit(a::receive));
                 } else {
-                    return Tuple2.of(false, CompletableFuture.completedFuture(null));
+                    return Tuple.of(false, CompletableFuture.completedFuture(null));
                 }
             } catch (final InterruptedException ex) {
-                return Utils.handleInterruptedException(ex, () -> Tuple2.of(false, CompletableFuture.completedFuture(null)));
+                return Utils.handleInterruptedException(ex, () -> Tuple.of(false, CompletableFuture.completedFuture(null)));
             }
         }
     }

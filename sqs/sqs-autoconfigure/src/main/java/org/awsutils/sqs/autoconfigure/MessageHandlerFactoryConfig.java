@@ -1,5 +1,6 @@
 package org.awsutils.sqs.autoconfigure;
 
+import io.vavr.Tuple2;
 import org.awsutils.sqs.client.SnsService;
 import org.awsutils.sqs.client.SnsServiceImpl;
 import org.awsutils.sqs.client.SqsMessageClient;
@@ -8,7 +9,6 @@ import org.awsutils.sqs.handler.MessageHandlerFactory;
 import org.awsutils.sqs.handler.MessageHandlerFactoryImpl;
 import org.awsutils.sqs.handler.impl.AbstractSqsMessageHandler;
 import org.awsutils.sqs.util.ApplicationContextUtils;
-import org.awsutils.sqs.util.Tuple2;
 import org.awsutils.sqs.util.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;

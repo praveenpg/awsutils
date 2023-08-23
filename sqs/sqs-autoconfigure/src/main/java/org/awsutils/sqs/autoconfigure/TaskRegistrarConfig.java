@@ -1,8 +1,9 @@
 package org.awsutils.sqs.autoconfigure;
 
 
+import io.vavr.Tuple;
+import io.vavr.Tuple4;
 import org.awsutils.sqs.listener.SqsMessageListener;
-import org.awsutils.sqs.util.Tuple4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -47,7 +48,7 @@ public class TaskRegistrarConfig {
         }
 
         public void addListener(final SqsMessageListener sqsMessageListener, final String maxMessageKey, final String intervalKey, final Function<String, Integer> func1) {
-            this.listenerList.add(Tuple4.of(sqsMessageListener, maxMessageKey, intervalKey, func1));
+            this.listenerList.add(Tuple.of(sqsMessageListener, maxMessageKey, intervalKey, func1));
         }
 
         private Instant getNextRunTimeForPrefSyncUp(final TriggerContext triggerContext, final String intervalKey, final Function<String, Integer> func1) {

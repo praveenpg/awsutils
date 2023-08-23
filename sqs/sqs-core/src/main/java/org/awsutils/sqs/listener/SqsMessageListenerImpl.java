@@ -1,5 +1,7 @@
 package org.awsutils.sqs.listener;
 
+import io.vavr.Tuple;
+import io.vavr.Tuple3;
 import org.awsutils.sqs.client.MessageConstants;
 import org.awsutils.sqs.client.SqsMessageClient;
 import org.awsutils.sqs.config.WorkerNodeCheckFunc;
@@ -13,7 +15,6 @@ import org.awsutils.sqs.message.TaskInput;
 import org.awsutils.sqs.ratelimiter.RateLimiter;
 import org.awsutils.sqs.ratelimiter.RateLimiterFactory;
 import org.awsutils.sqs.util.ApplicationContextUtils;
-import org.awsutils.sqs.util.Tuple3;
 import org.awsutils.sqs.util.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -301,7 +302,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
 
         if (!body.contains("\"Type\" : \"Notification\"")) {
             sqsMessage = Utils.constructFromJson(SqsMessage.class, body, cause -> new UtilsException("INVALID_JSON", cause));
-            return Tuple3.of(sqsMessage, null, null);
+            return Tuple.of(sqsMessage, null, null);
         } else {
             return processSnsNotification(body, receiptHandle);
         }
@@ -333,7 +334,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         messAttr = CollectionUtils.isEmpty(messageAttributes) ? null :
                 messageAttributes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, b -> b.getValue().getValue()));
 
-        return Tuple3.of(sqsMessage, messAttr, taskInput);
+        return Tuple.of(sqsMessage, messAttr, taskInput);
     }
 
 

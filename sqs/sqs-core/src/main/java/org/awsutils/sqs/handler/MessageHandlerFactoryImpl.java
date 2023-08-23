@@ -2,6 +2,7 @@ package org.awsutils.sqs.handler;
 
 
 
+import io.vavr.Tuple2;
 import org.apache.commons.lang3.ArrayUtils;
 import org.awsutils.sqs.exceptions.UtilsException;
 import org.awsutils.sqs.handler.impl.AbstractSqsMessageHandler;
@@ -9,7 +10,6 @@ import org.awsutils.sqs.handler.impl.MethodLevelSqsMessageHandler;
 import org.awsutils.sqs.message.SqsMessage;
 import org.awsutils.sqs.ratelimiter.RateLimiter;
 import org.awsutils.sqs.util.ApplicationContextUtils;
-import org.awsutils.sqs.util.Tuple2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.beans.factory.annotation.Qualifier;

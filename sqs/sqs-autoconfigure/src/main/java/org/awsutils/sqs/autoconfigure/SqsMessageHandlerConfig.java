@@ -1,12 +1,13 @@
 package org.awsutils.sqs.autoconfigure;
 
 
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
 import org.awsutils.sqs.annotations.MessageHandler;
 import org.awsutils.sqs.exceptions.UtilsException;
 import org.awsutils.sqs.handler.impl.AbstractSqsMessageHandler;
 import org.awsutils.sqs.message.SqsMessage;
 import org.awsutils.sqs.ratelimiter.RateLimiter;
-import org.awsutils.sqs.util.Tuple2;
 import org.awsutils.sqs.util.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -56,12 +57,12 @@ public class SqsMessageHandlerConfig {
         // Create a List of Tuples: _1 is an instance of the 'Type' enum from SqsMessage -- this is pulled from the MessageHandler annotation
         //                          _2 is the class on which the MessageHandler annotation "sat".
         final List<Tuple2<String, Class<AbstractSqsMessageHandler<?>>>> tuples = annotated.stream()
-                .map(a -> Tuple2.of(a.getDeclaredAnnotation(MessageHandler.class).messageType(), a)).toList();
+                .map(a -> Tuple.of(a.getDeclaredAnnotation(MessageHandler.class).messageType(), a)).toList();
 
         // So now we populate this Map, which is from the 'Type' enum to a class constructor to create
         // an instance of the type on which the MessageHandler annotation sat.
-        handlerMapping = tuples.stream().collect(Collectors.toMap(Tuple2::_1,
-                tuple -> Tuple2.of(Utils.getConstructor(tuple._2(), e -> {
+        handlerMapping = tuples.stream().collect(Collectors.toMap(x -> x._1,
+                tuple -> Tuple.of(Utils.getConstructor(tuple._2(), e -> {
                             LOGGER.error("*************** No empty constructor defined in " + tuple._2());
                             LOGGER.error("*************** No empty constructor defined in " + tuple._2());
                             LOGGER.error("All SQS Message Handlers must have an empty constructor [private/public/protected]");
@@ -91,7 +92,7 @@ public class SqsMessageHandlerConfig {
         // Create a List of Tuples: _1 is an instance of the 'Type' enum from SqsMessage -- this is pulled from the MessageHandler annotation
         //                          _2 is the class on which the MessageHandler annotation "sat".
         final List<Tuple2<String, Method>> tuples = annotated.stream()
-                .map(a -> Tuple2.of(a.getDeclaredAnnotation(MessageHandler.class).messageType(), a)).toList();
+                .map(a -> Tuple.of(a.getDeclaredAnnotation(MessageHandler.class).messageType(), a)).toList();
 
         // So now we populate this Map, which is from the 'Type' enum to a class constructor to create
         // an instance of the type on which the MessageHandler annotation sat.

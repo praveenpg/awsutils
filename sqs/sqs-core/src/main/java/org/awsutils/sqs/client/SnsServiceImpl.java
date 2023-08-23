@@ -1,8 +1,9 @@
 package org.awsutils.sqs.client;
 
 
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
 import org.awsutils.sqs.message.SnsMessage;
-import org.awsutils.sqs.util.Tuple2;
 import org.awsutils.sqs.util.Utils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -32,14 +33,14 @@ public class SnsServiceImpl implements SnsService {
                 .topicArn(topicArn);
         final Map<String, MessageAttributeValue> messageAttributesMap = new HashMap<>();
 
-        if (!StringUtils.isEmpty(snsMessage.getTransactionId())) {
+        if (StringUtils.hasLength(snsMessage.getTransactionId())) {
             messageAttributesMap.put(MessageConstants.TRANSACTION_ID, MessageAttributeValue.builder().dataType(STRING_DATA_TYPE).stringValue(snsMessage.getTransactionId()).build());
             messageAttributesMap.put(MessageConstants.MESSAGE_TYPE, MessageAttributeValue.builder().dataType(STRING_DATA_TYPE).stringValue(snsMessage.getMessageType()).build());
         }
 
         if (!CollectionUtils.isEmpty(attributes)) {
             messageAttributesMap.putAll(attributes.entrySet().stream()
-                    .map(entry -> Tuple2.of(entry.getKey(),
+                    .map(entry -> Tuple.of(entry.getKey(),
                             MessageAttributeValue.builder()
                                     .stringValue(entry.getValue())
                                     .dataType(STRING_DATA_TYPE)))
