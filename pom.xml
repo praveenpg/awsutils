@@ -6,7 +6,7 @@
 
     <groupId>org.awsutils</groupId>
     <artifactId>awsutils-starters</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <parent>
@@ -181,7 +181,32 @@
                             </execution>
                         </executions>
                     </plugin>
-
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <show>public</show>
+                                    <failOnError>false</failOnError>
+                                    <detectOfflineLinks>false</detectOfflineLinks>
+                                    <doclint>all,-missing</doclint>
+                                    <nohelp>true</nohelp>
+                                    <excludePackageNames>*.internal.*,testutil,demo</excludePackageNames>
+                                    <quiet>true</quiet>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <failOnError>false</failOnError>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
@@ -189,6 +214,15 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.0.1</version>
+                <configuration>
+                    <releaseProfiles>release</releaseProfiles>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -201,13 +235,18 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.3.0</version>
+                <artifactId>maven-plugin-plugin</artifactId>
+                <version>3.9.0</version>
                 <executions>
                     <execution>
-                        <id>attach-sources</id>
+                        <id>default-descriptor</id>
+                        <phase>process-classes</phase>
+                    </execution>
+                    <!-- if you want to generate help goal -->
+                    <execution>
+                        <id>help-goal</id>
                         <goals>
-                            <goal>jar</goal>
+                            <goal>helpmojo</goal>
                         </goals>
                     </execution>
                 </executions>
