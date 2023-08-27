@@ -1,5 +1,6 @@
 package org.awsutils.sqs.autoconfigure;
 
+import org.awsutils.common.config.AwsEnvironmentProperties;
 import org.awsutils.sqs.message.SqsMessage;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

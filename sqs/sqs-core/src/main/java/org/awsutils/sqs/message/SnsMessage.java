@@ -2,8 +2,8 @@ package org.awsutils.sqs.message;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.awsutils.sqs.client.SnsService;
-import org.awsutils.sqs.exceptions.UtilsException;
-import org.awsutils.sqs.util.ApplicationContextUtils;
+import org.awsutils.common.exceptions.UtilsException;
+import org.awsutils.common.util.ApplicationContextUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.beans.factory.annotation.Qualifier;

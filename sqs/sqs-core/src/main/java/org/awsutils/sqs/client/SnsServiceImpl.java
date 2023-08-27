@@ -4,7 +4,7 @@ package org.awsutils.sqs.client;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import org.awsutils.sqs.message.SnsMessage;
-import org.awsutils.sqs.util.Utils;
+import org.awsutils.common.util.Utils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;

@@ -1,6 +1,7 @@
 package org.awsutils.sqs.autoconfigure;
 
-import org.awsutils.sqs.util.LimitedQueue;
+import org.awsutils.common.config.AwsEnvironmentProperties;
+import org.awsutils.common.util.LimitedQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -27,11 +28,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static org.awsutils.common.config.ConfigConstants.CONFIG_PREFIX;
+
 @Configuration
 @Slf4j
 public class SqsConfig {
     @Bean("staticCredentialsProvider")
-    @ConditionalOnProperty(prefix = "spring.pearson.aws", value = {"awsAccessKeySecret", "awsAccessKey"})
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"awsAccessKeySecret", "awsAccessKey"})
     @ConditionalOnMissingBean(name = "staticCredentialsProvider")
     public AwsCredentialsProvider staticCredentialsProvider(final AwsEnvironmentProperties sqsProperties) {
         return StaticCredentialsProvider
@@ -39,7 +42,7 @@ public class SqsConfig {
     }
 
     @Bean("staticCredentialsProvider")
-    @ConditionalOnProperty(prefix = "spring.pearson.aws", value = {"aws-access-key", "aws-access-key-secret"})
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"aws-access-key", "aws-access-key-secret"})
     @ConditionalOnMissingBean(name = "staticCredentialsProvider")
     public AwsCredentialsProvider staticCredentialsProvider2(final AwsEnvironmentProperties sqsProperties) {
         return StaticCredentialsProvider
@@ -47,7 +50,7 @@ public class SqsConfig {
     }
 
     @Bean("staticCredentialsProvider")
-    @ConditionalOnProperty(prefix = "spring.pearson.aws", value = {"awsAccessKeySecret", "aws-access-key-secret"})
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"awsAccessKeySecret", "aws-access-key-secret"})
     @ConditionalOnMissingBean(name = "staticCredentialsProvider")
     public AwsCredentialsProvider staticCredentialsProvider3(final AwsEnvironmentProperties sqsProperties) {
         return StaticCredentialsProvider
@@ -55,7 +58,7 @@ public class SqsConfig {
     }
 
     @Bean("staticCredentialsProvider")
-    @ConditionalOnProperty(prefix = "spring.pearson.aws", value = {"aws-access-key", "awsAccessKeySecret"})
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"aws-access-key", "awsAccessKeySecret"})
     @ConditionalOnMissingBean(name = "staticCredentialsProvider")
     public AwsCredentialsProvider staticCredentialsProvider4(final AwsEnvironmentProperties sqsProperties) {
         return StaticCredentialsProvider
@@ -64,7 +67,7 @@ public class SqsConfig {
 
     @Bean
     @ConditionalOnBean(name = "staticCredentialsProvider")
-    @ConditionalOnProperty(prefix = "spring.pearson.aws", value = {"region"})
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"region"})
     public SnsAsyncClient snsAsyncClient(final AwsCredentialsProvider staticCredentialsProvider,
 //                                         final SdkAsyncHttpClient selectedSdkAsyncHttpClient,
                                          final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
@@ -83,7 +86,7 @@ public class SqsConfig {
 
     @Bean
     @ConditionalOnBean(name = "staticCredentialsProvider")
-    @ConditionalOnProperty(prefix = "spring.pearson.aws", value = {"region"})
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"region"})
     public SqsAsyncClient sqsAsyncClient(final AwsCredentialsProvider staticCredentialsProvider,
 //                                         final SdkAsyncHttpClient selectedSdkAsyncHttpClient,
                                          final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
@@ -102,7 +105,7 @@ public class SqsConfig {
 
     @Bean
     @ConditionalOnMissingBean(name = "staticCredentialsProvider")
-    @ConditionalOnProperty(prefix = "spring.pearson.aws", value = {"region"})
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"region"})
     public SqsAsyncClient sqsAsyncClientEnv(final AwsEnvironmentProperties sqsProperties
 //                                            ,final SdkAsyncHttpClient selectedSdkAsyncHttpClient
     ) throws URISyntaxException {
@@ -121,7 +124,7 @@ public class SqsConfig {
 
     @Bean
     @ConditionalOnMissingBean(name = "staticCredentialsProvider")
-    @ConditionalOnProperty(prefix = "spring.pearson.aws", value = {"region"})
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"region"})
     public SnsAsyncClient snsAsyncClientEnv(final AwsEnvironmentProperties sqsProperties
 //                                            ,final SdkAsyncHttpClient selectedSdkAsyncHttpClient
     ) throws URISyntaxException {
@@ -152,7 +155,7 @@ public class SqsConfig {
     }
 
     @Bean(destroyMethod = "shutdown")
-    @ConditionalOnProperty(prefix = "spring.pearson.aws.sqs.common", name = "threadPoolSize")
+    @ConditionalOnProperty(prefix = "org.awsutils.aws.sqs.common", name = "threadPoolSize")
     public CommonExecutorService commonExecutorService(final SqsCommonProperties sqsCommonProperties) {
         return new CommonExecutorService(getThreadPoolExecutor(sqsCommonProperties.getThreadPoolCoreSize(), sqsCommonProperties.getThreadPoolSize(), sqsCommonProperties.getMaxThreadPoolQueueSize()));
     }

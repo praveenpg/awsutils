@@ -19,6 +19,9 @@
     <modules>
         <module>sqs</module>
         <module>starters</module>
+        <module>dynamodb</module>
+        <module>common</module>
+        <module>common-autoconfigure</module>
     </modules>
 
     <name>Springboot starters for AWS services</name>
@@ -66,11 +69,6 @@
                 <groupId>org.aspectj</groupId>
                 <artifactId>aspectjrt</artifactId>
                 <version>${aspectj.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>sqs</artifactId>
-                <version>${aws.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>

@@ -5,7 +5,7 @@ package org.awsutils.sqs.handler;
 
 
 import org.awsutils.sqs.message.SqsMessage;
-import org.awsutils.sqs.ratelimiter.RateLimiter;
+import org.awsutils.common.ratelimiter.RateLimiter;
 
 import java.util.Map;
 

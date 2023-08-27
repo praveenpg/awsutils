@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 
 
-@ConfigurationProperties(prefix = "spring.pearson.aws.sqs.listener")
+@ConfigurationProperties(prefix = "org.awsutils.aws.sqs.listener")
 @Slf4j
 public class SqsMessageListenerProperties {
     private int threadPoolSize;
@@ -20,7 +20,7 @@ public class SqsMessageListenerProperties {
     private String queueUrl;
 
 
-    @NotNull(message = "spring.pearson.aws.sqs.listener.{name}.scheduleRunIntervalKey")
+    @NotNull(message = "org.awsutils.aws.sqs.listener.{name}.scheduleRunIntervalKey")
     private String scheduleRunIntervalKey;
 
     private String listenerName;

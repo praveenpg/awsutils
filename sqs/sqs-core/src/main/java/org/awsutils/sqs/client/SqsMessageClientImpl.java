@@ -1,9 +1,9 @@
 package org.awsutils.sqs.client;
 
 import com.google.common.collect.ImmutableMap;
-import org.awsutils.sqs.exceptions.UtilsException;
+import org.awsutils.common.exceptions.UtilsException;
 import org.awsutils.sqs.message.SqsMessage;
-import org.awsutils.sqs.util.Utils;
+import org.awsutils.common.util.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;

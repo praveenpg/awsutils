@@ -1,9 +1,9 @@
 package org.awsutils.sqs.config;
 
 
-import org.awsutils.sqs.ratelimiter.RateLimiterFactory;
-import org.awsutils.sqs.util.ApplicationContextUtils;
-import org.awsutils.sqs.util.Utils;
+import org.awsutils.common.ratelimiter.RateLimiterFactory;
+import org.awsutils.common.util.ApplicationContextUtils;
+import org.awsutils.common.util.Utils;
 import jakarta.annotation.PostConstruct;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
