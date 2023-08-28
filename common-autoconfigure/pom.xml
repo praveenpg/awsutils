@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.awsutils</groupId>
         <artifactId>awsutils-starters</artifactId>
-        <version>1.0.1-beta</version>
+        <version>1.0.1-beta4</version>
     </parent>
 
     <artifactId>common-autoconfigure</artifactId>
@@ -26,6 +26,18 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>auth</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>aws-crt-client</artifactId>
         </dependency>
     </dependencies>
 

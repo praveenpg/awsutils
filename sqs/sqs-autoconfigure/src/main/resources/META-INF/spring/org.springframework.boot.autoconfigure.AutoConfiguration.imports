@@ -1,1 +1,2 @@
 org.awsutils.sqs.autoconfigure.SqsAutoConfiguration
+org.awsutils.common.config.AwsAutoConfiguration

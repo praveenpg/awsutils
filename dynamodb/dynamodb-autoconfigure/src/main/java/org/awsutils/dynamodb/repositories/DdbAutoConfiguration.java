@@ -1,5 +1,6 @@
 package org.awsutils.dynamodb.repositories;
 
+import org.apache.commons.lang3.StringUtils;
 import org.awsutils.common.config.AwsEnvironmentProperties;
 import org.awsutils.dynamodb.config.DynamoDbProperties;
 import org.awsutils.dynamodb.config.EntityValidationConfig;
@@ -12,12 +13,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClientBuilder;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
 
 @SuppressWarnings("rawtypes")
@@ -26,37 +29,65 @@ import java.util.Map;
 @EnableConfigurationProperties({AwsEnvironmentProperties.class, DynamoDbProperties.class})
 @Import(DataMapperConfig.class)
 public class DdbAutoConfiguration {
+    @Bean(name = "dynamoDbAsyncClientBuilder")
+    @ConditionalOnBean(SdkAsyncHttpClient.class)
+    public DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder(final SdkAsyncHttpClient selectedSdkAsyncHttpClient,
+                                                                 final AwsEnvironmentProperties dynamoDbProperties) throws URISyntaxException {
 
-    @Bean
-    @ConditionalOnProperty(prefix = "org.leo.aws", value = {"aws-access-key-secret", "aws-access-key"})
-    public AwsCredentialsProvider staticCredentialsProvider(final AwsEnvironmentProperties dynamoDbProperties) {
-        return StaticCredentialsProvider.create(AwsBasicCredentials.create(dynamoDbProperties.getAwsAccessKey(), dynamoDbProperties.getAwsAccessKeySecret()));
+        final var builder = DynamoDbAsyncClient
+                .builder()
+                .region(Region.of(dynamoDbProperties.getRegion()))
+                .httpClient(selectedSdkAsyncHttpClient);
+
+        if(dynamoDbProperties.isLocalAwsMode() && !StringUtils.isEmpty(dynamoDbProperties.getLocalAwsEndpoint())) {
+            return builder.endpointOverride(new URI(dynamoDbProperties.getLocalAwsEndpoint()));
+        }
+
+        return builder;
+    }
+
+    @Bean(name = "dynamoDbAsyncClientBuilder")
+    @ConditionalOnMissingBean(SdkAsyncHttpClient.class)
+    public DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder2(final AwsEnvironmentProperties dynamoDbProperties) throws URISyntaxException {
+
+        final var builder = DynamoDbAsyncClient
+                .builder()
+                .region(Region.of(dynamoDbProperties.getRegion()));
+
+        if(dynamoDbProperties.isLocalAwsMode() && !StringUtils.isEmpty(dynamoDbProperties.getLocalAwsEndpoint())) {
+            return builder.endpointOverride(new URI(dynamoDbProperties.getLocalAwsEndpoint()));
+        }
+
+        return builder;
     }
 
     @Bean
     @ConditionalOnBean(name = "staticCredentialsProvider")
-    @ConditionalOnProperty(prefix = "org.leo.aws", value = {"region"})
-    public DynamoDbAsyncClient amazonDynamoDB(final AwsCredentialsProvider staticCredentialsProvider, final AwsEnvironmentProperties dynamoDbProperties) {
+    @ConditionalOnProperty(prefix = "org.awsutils.aws", value = {"region"})
+    public DynamoDbAsyncClient amazonDynamoDB(final AwsCredentialsProvider staticCredentialsProvider,
+                                              final DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder,
+                                              final AwsEnvironmentProperties dynamoDbProperties) throws URISyntaxException {
 
-        return DynamoDbAsyncClient.builder().region(Region.of(dynamoDbProperties.getRegion())).credentialsProvider(staticCredentialsProvider).build();
+        return dynamoDbAsyncClientBuilder
+                .credentialsProvider(staticCredentialsProvider)
+                .build();
     }
 
     @Bean
     @ConditionalOnMissingBean(name = "staticCredentialsProvider")
-    @ConditionalOnProperty(prefix = "org.leo.aws", value = {"region"})
-    public DynamoDbAsyncClient amazonDynamoDBEnv(final AwsEnvironmentProperties dynamoDbProperties) {
-
-        return DynamoDbAsyncClient.builder().region(Region.of(dynamoDbProperties.getRegion())).build();
+    @ConditionalOnProperty(prefix = "org.awsutils.aws", value = {"region"})
+    public DynamoDbAsyncClient amazonDynamoDBEnv(final DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder) {
+        return dynamoDbAsyncClientBuilder.build();
     }
 
     @Bean(name = "entityValidationConfigMain")
-    @ConditionalOnProperty(prefix = "org.leo.aws.ddb", value = "entity-base-package")
+    @ConditionalOnProperty(prefix = "org.awsutils.aws.ddb", value = "entity-base-package")
     public EntityValidationConfig entityValidationConfigMain(final DynamoDbProperties dynamoDbProperties) {
         return new EntityValidationConfig(dynamoDbProperties.getEntityBasePackage());
     }
 
     @Bean(name = "dataMapperConfigCleanUpMain")
-    @ConditionalOnProperty(prefix = "org.leo.aws.ddb", value = "entity-base-package")
+    @ConditionalOnProperty(prefix = "org.awsutils.aws.ddb", value = "entity-base-package")
     public DataMapperConfigCleanUp dataMapperConfigCleanUpMain(final DynamoDbProperties dynamoDbProperties, final Map<Class, DataMapper> dataMapperMap, final Environment environment) {
         return new DataMapperConfigCleanUp(dynamoDbProperties.getEntityBasePackage(), dataMapperMap, environment);
     }

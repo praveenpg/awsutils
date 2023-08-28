@@ -1,1 +1,2 @@
 org.awsutils.dynamodb.repositories.DdbAutoConfiguration
+org.awsutils.common.config.AwsAutoConfiguration

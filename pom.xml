@@ -6,7 +6,7 @@
 
     <groupId>org.awsutils</groupId>
     <artifactId>awsutils-starters</artifactId>
-    <version>1.0.1-beta</version>
+    <version>1.0.1-beta4</version>
     <packaging>pom</packaging>
 
     <parent>
@@ -124,6 +124,16 @@
                 <groupId>io.vavr</groupId>
                 <artifactId>vavr</artifactId>
                 <version>0.10.4</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>auth</artifactId>
+                <version>${aws.sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>aws-crt-client</artifactId>
+                <version>${aws.sdk.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

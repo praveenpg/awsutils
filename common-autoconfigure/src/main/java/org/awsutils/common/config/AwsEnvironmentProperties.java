@@ -5,6 +5,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.time.Duration;
+
 import static org.awsutils.common.config.ConfigConstants.CONFIG_PREFIX;
 
 @Getter
@@ -18,5 +20,10 @@ public class AwsEnvironmentProperties {
     private int maxConcurrency = 100;
     private boolean localAwsMode = false;
     private String localAwsEndpoint;
-    private int maxPendingConnectionAcquires = 10000;
+    private Duration connectionTimeout = Duration.ofSeconds(5);
+    private Duration connectionMaxIdleTime = Duration.ofSeconds(5);
+
+    public void setConnectionTimeout(Duration connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
+    }
 }
