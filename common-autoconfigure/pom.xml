@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.awsutils</groupId>
         <artifactId>awsutils-starters</artifactId>
-        <version>1.0.1-beta7</version>
+        <version>1.0.1-beta8</version>
     </parent>
 
     <artifactId>common-autoconfigure</artifactId>
@@ -38,6 +38,16 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>aws-crt-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.awsutils</groupId>
+            <artifactId>common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

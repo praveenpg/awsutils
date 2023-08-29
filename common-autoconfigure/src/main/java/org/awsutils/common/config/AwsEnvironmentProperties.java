@@ -9,7 +9,7 @@ import static org.awsutils.common.config.ConfigConstants.CONFIG_PREFIX;
 
 @Data
 @ConfigurationProperties(prefix = CONFIG_PREFIX)
-public class AwsEnvironmentProperties {
+public class AwsEnvironmentProperties implements IAwsEnvironmentProperties {
     private String region;
     private String awsAccessKey;
     private String awsAccessKeySecret;

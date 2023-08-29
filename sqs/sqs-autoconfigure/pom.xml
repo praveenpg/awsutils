@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.awsutils</groupId>
         <artifactId>sqs</artifactId>
-        <version>1.0.1-beta7</version>
+        <version>1.0.1-beta8</version>
     </parent>
 
     <artifactId>sqs-autoconfigure</artifactId>

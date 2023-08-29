@@ -6,7 +6,7 @@
 
     <groupId>org.awsutils</groupId>
     <artifactId>awsutils-starters</artifactId>
-    <version>1.0.1-beta7</version>
+    <version>1.0.1-beta8</version>
     <packaging>pom</packaging>
 
     <parent>
@@ -22,7 +22,6 @@
         <module>dynamodb</module>
         <module>common</module>
         <module>common-autoconfigure</module>
-        <module>starters/dynamodb-starter</module>
     </modules>
 
     <name>Springboot starters for AWS services</name>

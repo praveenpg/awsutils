@@ -5,9 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.awsutils</groupId>
-        <artifactId>awsutils-starters</artifactId>
-        <version>1.0.1-beta7</version>
-        <relativePath>../../pom.xml</relativePath>
+        <artifactId>starters</artifactId>
+        <version>1.0.1-beta8</version>
     </parent>
 
     <artifactId>dynamodb-starter</artifactId>

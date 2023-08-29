@@ -6,13 +6,14 @@
     <parent>
         <groupId>org.awsutils</groupId>
         <artifactId>awsutils-starters</artifactId>
-        <version>1.0.1-beta7</version>
+        <version>1.0.1-beta8</version>
     </parent>
 
     <artifactId>starters</artifactId>
     <packaging>pom</packaging>
     <modules>
         <module>sqs-starter</module>
+        <module>dynamodb-starter</module>
     </modules>
 
     <properties>
