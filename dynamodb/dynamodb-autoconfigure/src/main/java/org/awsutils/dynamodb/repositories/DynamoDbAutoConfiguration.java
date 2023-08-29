@@ -26,9 +26,9 @@ import java.util.Map;
 @SuppressWarnings("rawtypes")
 @Configuration
 @ConditionalOnClass({DynamoDbRepository.class})
-@EnableConfigurationProperties({DynamoDbProperties.class})
+@EnableConfigurationProperties({DynamoDbProperties.class, AwsEnvironmentProperties.class})
 @Import(DataMapperConfig.class)
-public class DdbAutoConfiguration {
+public class DynamoDbAutoConfiguration {
     @Bean(name = "dynamoDbAsyncClientBuilder")
     @ConditionalOnBean(SdkAsyncHttpClient.class)
     public DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder(final SdkAsyncHttpClient selectedSdkAsyncHttpClient,

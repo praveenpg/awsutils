@@ -62,7 +62,9 @@ public class SqsConfig {
     @Bean("sqsAsyncClientBuilder")
     @ConditionalOnBean(SdkAsyncHttpClient.class)
     public SqsAsyncClientBuilder sqsAsyncClientBuilder(final SdkAsyncHttpClient selectedSdkAsyncHttpClient, final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
-        final var builder = SqsAsyncClient.builder().region(Region.of(sqsProperties.getRegion()))
+        final var builder = SqsAsyncClient
+                .builder()
+                .region(Region.of(sqsProperties.getRegion()))
                 .httpClient(selectedSdkAsyncHttpClient);
 
         if(sqsProperties.isLocalAwsMode() && !StringUtils.isEmpty(sqsProperties.getLocalAwsEndpoint())) {

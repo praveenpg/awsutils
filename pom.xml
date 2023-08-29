@@ -6,7 +6,7 @@
 
     <groupId>org.awsutils</groupId>
     <artifactId>awsutils-starters</artifactId>
-    <version>1.0.1-beta5</version>
+    <version>1.0.1-beta7</version>
     <packaging>pom</packaging>
 
     <parent>
@@ -72,11 +72,6 @@
                 <version>${aspectj.version}</version>
             </dependency>
             <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>aws-sdk-java</artifactId>
-                <version>${aws.sdk.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
                 <version>${jackson.version}</version>
@@ -127,13 +122,10 @@
             </dependency>
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
-                <artifactId>auth</artifactId>
+                <artifactId>bom</artifactId>
                 <version>${aws.sdk.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>aws-crt-client</artifactId>
-                <version>${aws.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

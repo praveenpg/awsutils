@@ -1,1 +1,1 @@
-org.awsutils.dynamodb.repositories.DdbAutoConfiguration
+org.awsutils.dynamodb.repositories.DynamoDbAutoConfiguration
