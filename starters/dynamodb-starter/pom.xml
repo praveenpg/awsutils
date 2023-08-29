@@ -24,6 +24,11 @@
             <artifactId>dynamodb-autoconfigure</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.awsutils</groupId>
+            <artifactId>common-autoconfigure</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

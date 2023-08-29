@@ -26,21 +26,21 @@ import java.util.Map;
 @SuppressWarnings("rawtypes")
 @Configuration
 @ConditionalOnClass({DynamoDbRepository.class})
-@EnableConfigurationProperties({AwsEnvironmentProperties.class, DynamoDbProperties.class})
+@EnableConfigurationProperties({DynamoDbProperties.class})
 @Import(DataMapperConfig.class)
 public class DdbAutoConfiguration {
     @Bean(name = "dynamoDbAsyncClientBuilder")
     @ConditionalOnBean(SdkAsyncHttpClient.class)
     public DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder(final SdkAsyncHttpClient selectedSdkAsyncHttpClient,
-                                                                 final AwsEnvironmentProperties dynamoDbProperties) throws URISyntaxException {
+                                                                 final AwsEnvironmentProperties awsEnvironmentProperties) throws URISyntaxException {
 
         final var builder = DynamoDbAsyncClient
                 .builder()
-                .region(Region.of(dynamoDbProperties.getRegion()))
+                .region(Region.of(awsEnvironmentProperties.getRegion()))
                 .httpClient(selectedSdkAsyncHttpClient);
 
-        if(dynamoDbProperties.isLocalAwsMode() && !StringUtils.isEmpty(dynamoDbProperties.getLocalAwsEndpoint())) {
-            return builder.endpointOverride(new URI(dynamoDbProperties.getLocalAwsEndpoint()));
+        if(awsEnvironmentProperties.isLocalAwsMode() && !StringUtils.isEmpty(awsEnvironmentProperties.getLocalAwsEndpoint())) {
+            return builder.endpointOverride(new URI(awsEnvironmentProperties.getLocalAwsEndpoint()));
         }
 
         return builder;
@@ -48,14 +48,14 @@ public class DdbAutoConfiguration {
 
     @Bean(name = "dynamoDbAsyncClientBuilder")
     @ConditionalOnMissingBean(SdkAsyncHttpClient.class)
-    public DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder2(final AwsEnvironmentProperties dynamoDbProperties) throws URISyntaxException {
+    public DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder2(final AwsEnvironmentProperties awsEnvironmentProperties) throws URISyntaxException {
 
         final var builder = DynamoDbAsyncClient
                 .builder()
-                .region(Region.of(dynamoDbProperties.getRegion()));
+                .region(Region.of(awsEnvironmentProperties.getRegion()));
 
-        if(dynamoDbProperties.isLocalAwsMode() && !StringUtils.isEmpty(dynamoDbProperties.getLocalAwsEndpoint())) {
-            return builder.endpointOverride(new URI(dynamoDbProperties.getLocalAwsEndpoint()));
+        if(awsEnvironmentProperties.isLocalAwsMode() && !StringUtils.isEmpty(awsEnvironmentProperties.getLocalAwsEndpoint())) {
+            return builder.endpointOverride(new URI(awsEnvironmentProperties.getLocalAwsEndpoint()));
         }
 
         return builder;
@@ -65,8 +65,7 @@ public class DdbAutoConfiguration {
     @ConditionalOnBean(name = "staticCredentialsProvider")
     @ConditionalOnProperty(prefix = "org.awsutils.aws", value = {"region"})
     public DynamoDbAsyncClient amazonDynamoDB(final AwsCredentialsProvider staticCredentialsProvider,
-                                              final DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder,
-                                              final AwsEnvironmentProperties dynamoDbProperties) throws URISyntaxException {
+                                              final DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder) {
 
         return dynamoDbAsyncClientBuilder
                 .credentialsProvider(staticCredentialsProvider)

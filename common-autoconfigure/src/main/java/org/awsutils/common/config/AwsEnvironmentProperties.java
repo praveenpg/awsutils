@@ -1,17 +1,13 @@
 package org.awsutils.common.config;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
 
 import static org.awsutils.common.config.ConfigConstants.CONFIG_PREFIX;
 
-@Getter
-@Setter
-@NoArgsConstructor
+@Data
 @ConfigurationProperties(prefix = CONFIG_PREFIX)
 public class AwsEnvironmentProperties {
     private String region;
@@ -22,8 +18,4 @@ public class AwsEnvironmentProperties {
     private String localAwsEndpoint;
     private Duration connectionTimeout = Duration.ofSeconds(5);
     private Duration connectionMaxIdleTime = Duration.ofSeconds(5);
-
-    public void setConnectionTimeout(Duration connectionTimeout) {
-        this.connectionTimeout = connectionTimeout;
-    }
 }
