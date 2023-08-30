@@ -6,7 +6,7 @@
 
     <groupId>org.awsutils</groupId>
     <artifactId>awsutils-starters</artifactId>
-    <version>1.0.1-beta8</version>
+    <version>1.0.1-beta10</version>
     <packaging>pom</packaging>
 
     <parent>
@@ -106,13 +106,11 @@
                 <groupId>jakarta.validation</groupId>
                 <artifactId>jakarta.validation-api</artifactId>
                 <version>3.0.2</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>jakarta.annotation</groupId>
                 <artifactId>jakarta.annotation-api</artifactId>
                 <version>2.1.1</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.vavr</groupId>

@@ -36,7 +36,7 @@ import static org.awsutils.common.config.ConfigConstants.CONFIG_PREFIX;
 public class SqsConfig {
     @Bean("snsAsyncClientBuilder")
     @ConditionalOnBean(SdkAsyncHttpClient.class)
-    public SnsAsyncClientBuilder snsAsyncClientBuilder(final SdkAsyncHttpClient selectedSdkAsyncHttpClient, final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
+    public SnsAsyncClientBuilder snsAsyncClientBuilder_1(final SdkAsyncHttpClient selectedSdkAsyncHttpClient, final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
         final var builder = SnsAsyncClient.builder().region(Region.of(sqsProperties.getRegion()))
                 .httpClient(selectedSdkAsyncHttpClient);
 
@@ -49,7 +49,7 @@ public class SqsConfig {
 
     @Bean("snsAsyncClientBuilder")
     @ConditionalOnMissingBean(SdkAsyncHttpClient.class)
-    public SnsAsyncClientBuilder snsAsyncClientBuilder(final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
+    public SnsAsyncClientBuilder snsAsyncClientBuilder_2(final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
         final var builder = SnsAsyncClient.builder().region(Region.of(sqsProperties.getRegion()));
 
         if(sqsProperties.isLocalAwsMode() && !StringUtils.isEmpty(sqsProperties.getLocalAwsEndpoint())) {
@@ -61,7 +61,7 @@ public class SqsConfig {
 
     @Bean("sqsAsyncClientBuilder")
     @ConditionalOnBean(SdkAsyncHttpClient.class)
-    public SqsAsyncClientBuilder sqsAsyncClientBuilder(final SdkAsyncHttpClient selectedSdkAsyncHttpClient, final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
+    public SqsAsyncClientBuilder sqsAsyncClientBuilder_1(final SdkAsyncHttpClient selectedSdkAsyncHttpClient, final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
         final var builder = SqsAsyncClient
                 .builder()
                 .region(Region.of(sqsProperties.getRegion()))
@@ -76,7 +76,7 @@ public class SqsConfig {
 
     @Bean("sqsAsyncClientBuilder")
     @ConditionalOnMissingBean(SdkAsyncHttpClient.class)
-    public SqsAsyncClientBuilder sqsAsyncClientBuilder(final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
+    public SqsAsyncClientBuilder sqsAsyncClientBuilder_2(final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
         final var builder = SqsAsyncClient.builder().region(Region.of(sqsProperties.getRegion()));
 
         if(sqsProperties.isLocalAwsMode() && !StringUtils.isEmpty(sqsProperties.getLocalAwsEndpoint())) {
