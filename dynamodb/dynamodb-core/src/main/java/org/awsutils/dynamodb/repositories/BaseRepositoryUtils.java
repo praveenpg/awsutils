@@ -98,9 +98,19 @@ enum BaseRepositoryUtils {
             versionFieldType = versionedAttribute._1().getType();
 
             if (versionNum == null) {
-                updateItemRequestBuilder.expected(ImmutableMap.of(versionedAttribute._2().value(), ExpectedAttributeValue.builder().exists(false).build()));
+                updateItemRequestBuilder.expected(ImmutableMap.of(versionedAttribute._2().value(), ExpectedAttributeValue
+                        .builder().exists(false).build()));
             } else {
-                updateItemRequestBuilder.expected(ImmutableMap.of(versionedAttribute._2().value(), ExpectedAttributeValue.builder()
+                final DbAttribute dbAttribute = versionedAttribute._2();
+                final String attributeNameValue;
+
+                if(dbAttribute != null) {
+                    attributeNameValue = dbAttribute.value();
+                } else {
+                    attributeNameValue = versionedAttribute._1.getName();
+                }
+
+                updateItemRequestBuilder.expected(ImmutableMap.of(attributeNameValue, ExpectedAttributeValue.builder()
                         .value(AttributeValue.builder().n(String.valueOf(versionNum.intValue())).build()).build()));
             }
 
