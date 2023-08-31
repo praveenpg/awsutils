@@ -124,8 +124,8 @@ org:
   awsutils:
     aws:
       region: us-east-1
-      awsAccessKeySecret: HyGZ5Fs4gXEbHs5HBXHS5T53QyOTp4/7M8H1srmz
-      awsAccessKey: AKIAX4VOLKE7E6H44UHZ
+      awsAccessKeySecret: <AccessKey>
+      awsAccessKey: <Secret>>
       ddb:
         entityBasePackage: com.example.entities
         repositoryBasePackage: com.example.repositories
