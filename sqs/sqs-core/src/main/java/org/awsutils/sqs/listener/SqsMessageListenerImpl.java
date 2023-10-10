@@ -259,7 +259,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                 final Map<String, String> messageAttributes = message.messageAttributes().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, a -> a.getValue().stringValue()));
                 final String sqsMessageWrapperPresent = messageAttributes.get(MessageConstants.SQS_MESSAGE_WRAPPER_PRESENT);
 
-                if(StringUtils.hasLength(sqsMessageWrapperPresent) && "true".equalsIgnoreCase(sqsMessageWrapperPresent)) {
+                if((StringUtils.hasLength(sqsMessageWrapperPresent) && "true".equalsIgnoreCase(sqsMessageWrapperPresent)) || message.body().contains("\"messageType")) {
                     sqsMessage = constructSqsMessage(body, receiptHandle);
                     messageHandler = messageHandlerFactory.getMessageHandler(sqsMessage._1(),
                             receiptHandle,

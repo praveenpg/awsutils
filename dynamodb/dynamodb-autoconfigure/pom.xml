@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.awsutils</groupId>
         <artifactId>dynamodb</artifactId>
-        <version>1.0.1-beta11</version>
+        <version>1.0.1-beta14</version>
     </parent>
 
     <artifactId>dynamodb-autoconfigure</artifactId>

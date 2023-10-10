@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.awsutils</groupId>
         <artifactId>sqs</artifactId>
-        <version>1.0.1-beta11</version>
+        <version>1.0.1-beta14</version>
     </parent>
 
     <artifactId>sqs-core</artifactId>

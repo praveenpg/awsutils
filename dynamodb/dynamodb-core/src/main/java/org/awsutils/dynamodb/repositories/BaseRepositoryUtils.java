@@ -15,38 +15,13 @@ import org.awsutils.dynamodb.exceptions.DbException;
 import org.awsutils.dynamodb.exceptions.OptimisticLockFailureException;
 import org.awsutils.dynamodb.utils.DbUtils;
 import org.awsutils.dynamodb.utils.Expr;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
-import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
-import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
-import software.amazon.awssdk.services.dynamodb.model.ExpectedAttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
-import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.PutRequest;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
-import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
-import software.amazon.awssdk.services.dynamodb.model.ReturnItemCollectionMetrics;
-import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
-import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
-import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
-import software.amazon.awssdk.services.dynamodb.paginators.QueryPublisher;
-import software.amazon.awssdk.services.dynamodb.paginators.ScanPublisher;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 import java.lang.reflect.Field;
 import java.math.BigInteger;
@@ -278,8 +253,8 @@ enum BaseRepositoryUtils {
                 .tableName(dataMapper.tableName()).build();
 
         return DataMapperUtils.getDynamoDbAsyncClient().getItem(getItemRequest)
-                .thenApplyAsync(itemResponse -> itemResponse.item())
-                .thenApplyAsync(item -> item.isEmpty() ? Optional.of(dataMapper.mapFromAttributeValueToEntity(item)) : Optional.empty());
+                .thenApplyAsync(GetItemResponse::item)
+                .thenApplyAsync(item -> !item.isEmpty() ? Optional.of(dataMapper.mapFromAttributeValueToEntity(item)) : Optional.empty());
     }
 
     <ENTITY_TYPE> CompletableFuture<List<ENTITY_TYPE>> findByPrimaryKeys(final List<PrimaryKey> primaryKeys,
