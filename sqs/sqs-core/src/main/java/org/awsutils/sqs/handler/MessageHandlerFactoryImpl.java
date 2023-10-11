@@ -3,6 +3,7 @@ package org.awsutils.sqs.handler;
 import io.vavr.Tuple2;
 import org.apache.commons.lang3.ArrayUtils;
 import org.awsutils.common.exceptions.UtilsException;
+import org.awsutils.common.util.Utils;
 import org.awsutils.sqs.handler.impl.AbstractSqsMessageHandler;
 import org.awsutils.sqs.handler.impl.MethodLevelSqsMessageHandler;
 import org.awsutils.sqs.message.SqsMessage;
@@ -46,7 +47,8 @@ public class MessageHandlerFactoryImpl implements MessageHandlerFactory  {
             throw new UtilsException("NO_HANDLER_FOR_MESSAGE_TYPE", String.format("No handler for message type '%s'",
                     messageType));
         }
-        return getSqsMessageHandler(sqsMessage, messageType, transactionId, receiptHandle, queueUrl, retryCount, methodHandlerMapping.get(messageType), messageAttributes, messageHandlerRateLimiter);
+        return getSqsMessageHandler(sqsMessage, messageType, transactionId, receiptHandle, queueUrl, retryCount,
+                methodHandlerMapping.get(messageType), messageAttributes, messageHandlerRateLimiter);
     }
 
     @Override
@@ -57,14 +59,18 @@ public class MessageHandlerFactoryImpl implements MessageHandlerFactory  {
                                                       final Map<String, String> messageAttributes,
                                                       final RateLimiter messageHandlerRateLimiter) {
 
-        if (!handlerMapping.containsKey(sqsMessage.getMessageType())) {
+        if (!handlerMapping.containsKey(sqsMessage.getMessageType()) && !methodHandlerMapping.containsKey(sqsMessage.getMessageType())) {
             throw new UtilsException("NO_HANDLER_FOR_MESSAGE_TYPE", String.format("No handler for message type '%s'",
                     sqsMessage.getMessageType()));
+        } else if(handlerMapping.containsKey(sqsMessage.getMessageType())) {
+            return createSqsMessageHandlerProxy(getSqsMessageHandler(sqsMessage, receiptHandle, queueUrl,
+                    retryCount, handlerMapping.get(sqsMessage.getMessageType()), messageAttributes,
+                    messageHandlerRateLimiter));
+        } else {
+            return getSqsMessageHandler(Utils.constructJson(sqsMessage.getMessage()), sqsMessage.getMessageType(),
+                    sqsMessage.getTransactionId(), receiptHandle, queueUrl, retryCount, methodHandlerMapping.get(sqsMessage.getMessageType()),
+                    messageAttributes, messageHandlerRateLimiter);
         }
-
-        return createSqsMessageHandlerProxy(getSqsMessageHandler(sqsMessage, receiptHandle, queueUrl,
-                retryCount, handlerMapping.get(sqsMessage.getMessageType()), messageAttributes,
-                messageHandlerRateLimiter));
     }
 
     private <T> SqsMessageHandler<T> getSqsMessageHandler(final String sqsMessage,
@@ -117,7 +123,8 @@ public class MessageHandlerFactoryImpl implements MessageHandlerFactory  {
         try {
             final SqsMessageHandler<T> sqsMessageHandler = constructor._1().newInstance();
 
-            constructor._2().invoke(sqsMessageHandler, sqsMessage, receiptHandle, queueUrl, retryCount, messageAttributes, messageHandlerRateLimiter);
+            constructor._2().invoke(sqsMessageHandler, sqsMessage, receiptHandle, queueUrl, retryCount, messageAttributes,
+                    messageHandlerRateLimiter);
 
             if(sqsMessageHandler.getClass().getAnnotation(Configurable.class) == null) {
                 final Field[] fields = sqsMessageHandler.getClass().getDeclaredFields();
