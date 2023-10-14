@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.awsutils</groupId>
-        <artifactId>awsutils-starters</artifactId>
-        <version>1.0.1-beta16</version>
+        <artifactId>ratelimiter</artifactId>
+        <version>1.0.1-beta11</version>
     </parent>
 
-    <artifactId>common-autoconfigure</artifactId>
+    <artifactId>ratelimiter-autoconfigure</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -18,6 +18,12 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.awsutils</groupId>
+            <artifactId>ratelimiter-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot</artifactId>
@@ -37,17 +43,18 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>auth</artifactId>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-redis</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>aws-crt-client</artifactId>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+            <version>6.2.6.RELEASE</version>
         </dependency>
         <dependency>
-            <groupId>org.awsutils</groupId>
-            <artifactId>common</artifactId>
-            <version>${project.version}</version>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j-redis</artifactId>
         </dependency>
     </dependencies>
 
