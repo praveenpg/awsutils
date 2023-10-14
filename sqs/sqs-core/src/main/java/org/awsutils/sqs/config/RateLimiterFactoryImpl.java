@@ -1,12 +1,12 @@
 package org.awsutils.sqs.config;
 
 
-import org.awsutils.sqs.exceptions.UtilsException;
-import org.awsutils.sqs.ratelimiter.RateLimiter;
-import org.awsutils.sqs.ratelimiter.RateLimiterFactory;
-import org.awsutils.sqs.ratelimiter.RateLimiterReload;
-import org.awsutils.sqs.ratelimiter.RateLimiterType;
-import org.awsutils.sqs.util.ApplicationContextUtils;
+import org.awsutils.common.exceptions.UtilsException;
+import org.awsutils.common.ratelimiter.RateLimiter;
+import org.awsutils.common.ratelimiter.RateLimiterFactory;
+import org.awsutils.common.ratelimiter.RateLimiterReload;
+import org.awsutils.common.ratelimiter.RateLimiterType;
+import org.awsutils.common.util.ApplicationContextUtils;
 import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
 
@@ -22,7 +22,7 @@ enum RateLimiterFactoryImpl implements RateLimiterFactory {
 
     private final ConcurrentHashMap<String, RateLimiter> localRateLimiters = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, RateLimiter> distributedRateLimiters = new ConcurrentHashMap<>();
-    private static final String RATE_LIMITER_CONFIG_PREFIX = "spring.pearson.ratelimiter.config.ratelimiters.{0}.";
+    private static final String RATE_LIMITER_CONFIG_PREFIX = "org.awsutils.ratelimiter.config.ratelimiters.{0}.";
 
     @Override
     public RateLimiter getRateLimiter(final String name) {

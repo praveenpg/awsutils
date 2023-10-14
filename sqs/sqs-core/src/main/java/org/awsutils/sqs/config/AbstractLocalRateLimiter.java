@@ -1,10 +1,10 @@
 package org.awsutils.sqs.config;
 
 
-import org.awsutils.sqs.exceptions.UtilsException;
-import org.awsutils.sqs.ratelimiter.RateLimiter;
-import org.awsutils.sqs.ratelimiter.RateLimiterReload;
-import org.awsutils.sqs.util.Utils;
+import org.awsutils.common.exceptions.UtilsException;
+import org.awsutils.common.ratelimiter.RateLimiter;
+import org.awsutils.common.ratelimiter.RateLimiterReload;
+import org.awsutils.common.util.Utils;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

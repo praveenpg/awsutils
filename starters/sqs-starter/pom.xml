@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.awsutils</groupId>
         <artifactId>starters</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.0.1-beta16</version>
     </parent>
 
     <artifactId>sqs-starter</artifactId>
@@ -16,5 +16,18 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.awsutils</groupId>
+            <artifactId>sqs-autoconfigure</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.awsutils</groupId>
+            <artifactId>common-autoconfigure</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
 </project>

@@ -4,7 +4,7 @@ package org.awsutils.sqs.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.awsutils.sqs.ratelimiter.RateLimiterReload;
+import org.awsutils.common.ratelimiter.RateLimiterReload;
 
 public class RateLimiterReloader {
     private static final Logger LOGGER = LoggerFactory.getLogger(RateLimiterReloader.class);

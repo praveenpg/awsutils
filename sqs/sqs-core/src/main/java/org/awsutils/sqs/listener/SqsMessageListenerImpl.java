@@ -5,17 +5,17 @@ import io.vavr.Tuple3;
 import org.awsutils.sqs.client.MessageConstants;
 import org.awsutils.sqs.client.SqsMessageClient;
 import org.awsutils.sqs.config.WorkerNodeCheckFunc;
-import org.awsutils.sqs.exceptions.UtilsException;
+import org.awsutils.common.exceptions.UtilsException;
 import org.awsutils.sqs.handler.MessageHandlerFactory;
 import org.awsutils.sqs.handler.SqsMessageHandler;
 import org.awsutils.sqs.message.MessageAttribute;
 import org.awsutils.sqs.message.SnsSubscriptionMessage;
 import org.awsutils.sqs.message.SqsMessage;
 import org.awsutils.sqs.message.TaskInput;
-import org.awsutils.sqs.ratelimiter.RateLimiter;
-import org.awsutils.sqs.ratelimiter.RateLimiterFactory;
-import org.awsutils.sqs.util.ApplicationContextUtils;
-import org.awsutils.sqs.util.Utils;
+import org.awsutils.common.ratelimiter.RateLimiter;
+import org.awsutils.common.ratelimiter.RateLimiterFactory;
+import org.awsutils.common.util.ApplicationContextUtils;
+import org.awsutils.common.util.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -259,7 +259,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                 final Map<String, String> messageAttributes = message.messageAttributes().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, a -> a.getValue().stringValue()));
                 final String sqsMessageWrapperPresent = messageAttributes.get(MessageConstants.SQS_MESSAGE_WRAPPER_PRESENT);
 
-                if(StringUtils.hasLength(sqsMessageWrapperPresent) && "true".equalsIgnoreCase(sqsMessageWrapperPresent)) {
+                if((StringUtils.hasLength(sqsMessageWrapperPresent) && "true".equalsIgnoreCase(sqsMessageWrapperPresent)) || message.body().contains("\"messageType")) {
                     sqsMessage = constructSqsMessage(body, receiptHandle);
                     messageHandler = messageHandlerFactory.getMessageHandler(sqsMessage._1(),
                             receiptHandle,

@@ -3,3 +3,11 @@ sqs/target
 sqs/sqs-core/target
 sqs/sqs-autoconfigure/target
 /starters/sqs-starter/target
+target
+pom.xml.versionsBackup
+sqs/pom.xml.versionsBackup
+sqs/sqs-autoconfigure/pom.xml.versionsBackup
+sqs/sqs-core/pom.xml.versionsBackup
+dynamodb/target
+dynamodb/dynamodb-autoconfigure/target
+dynamodb/dynamodb-core/target

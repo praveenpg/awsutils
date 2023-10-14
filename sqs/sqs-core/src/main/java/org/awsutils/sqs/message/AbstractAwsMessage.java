@@ -1,6 +1,6 @@
 package org.awsutils.sqs.message;
 
-import org.awsutils.sqs.util.Utils;
+import org.awsutils.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

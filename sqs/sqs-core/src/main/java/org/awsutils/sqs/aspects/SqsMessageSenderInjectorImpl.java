@@ -1,7 +1,7 @@
 package org.awsutils.sqs.aspects;
 
 import org.awsutils.sqs.client.SqsMessageClient;
-import org.awsutils.sqs.util.ApplicationContextUtils;
+import org.awsutils.common.util.ApplicationContextUtils;
 
 public class SqsMessageSenderInjectorImpl implements SqsMessageSenderInjector {
     @Override

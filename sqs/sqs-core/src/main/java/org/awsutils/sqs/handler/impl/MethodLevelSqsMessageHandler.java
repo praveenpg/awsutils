@@ -1,6 +1,6 @@
 package org.awsutils.sqs.handler.impl;
 
-import org.awsutils.sqs.ratelimiter.RateLimiter;
+import org.awsutils.common.ratelimiter.RateLimiter;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

@@ -6,13 +6,14 @@
     <parent>
         <groupId>org.awsutils</groupId>
         <artifactId>awsutils-starters</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.0.1-beta16</version>
     </parent>
 
     <artifactId>starters</artifactId>
     <packaging>pom</packaging>
     <modules>
         <module>sqs-starter</module>
+        <module>dynamodb-starter</module>
     </modules>
 
     <properties>
@@ -21,28 +22,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-autoconfigure</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-autoconfigure-processor</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.awsutils</groupId>
-            <artifactId>sqs-autoconfigure</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
 
     <build>
         <plugins>
