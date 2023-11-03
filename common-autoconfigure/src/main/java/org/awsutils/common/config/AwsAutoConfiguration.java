@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 
@@ -56,6 +58,17 @@ public class AwsAutoConfiguration {
         log.info("Constructing defaultSdkAsyncHttpClient");
         return AwsCrtAsyncHttpClient.builder()
                 .maxConcurrency(awsEnvironmentProperties.getMaxConcurrency())
+                .connectionTimeout(awsEnvironmentProperties.getConnectionTimeout())
+                .connectionMaxIdleTime(awsEnvironmentProperties.getConnectionMaxIdleTime())
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(SdkHttpClient.class)
+    public SdkHttpClient sdkHttpClient(final AwsEnvironmentProperties awsEnvironmentProperties) {
+        log.info("Constructing defaultSdkAsyncHttpClient");
+        return ApacheHttpClient.builder()
+                .maxConnections(awsEnvironmentProperties.getMaxConcurrency())
                 .connectionTimeout(awsEnvironmentProperties.getConnectionTimeout())
                 .connectionMaxIdleTime(awsEnvironmentProperties.getConnectionMaxIdleTime())
                 .build();

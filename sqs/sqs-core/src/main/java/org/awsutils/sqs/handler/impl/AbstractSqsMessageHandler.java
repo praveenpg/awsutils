@@ -1,13 +1,13 @@
 package org.awsutils.sqs.handler.impl;
 
+import org.awsutils.common.exceptions.ServiceException;
+import org.awsutils.common.ratelimiter.RateLimiter;
+import org.awsutils.common.util.Utils;
 import org.awsutils.sqs.annotations.MessageHandler;
 import org.awsutils.sqs.aspects.SqsMessageSenderInjector;
 import org.awsutils.sqs.client.SqsMessageClient;
-import org.awsutils.common.exceptions.ServiceException;
 import org.awsutils.sqs.handler.SqsMessageHandler;
 import org.awsutils.sqs.message.SqsMessage;
-import org.awsutils.common.ratelimiter.RateLimiter;
-import org.awsutils.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -106,14 +106,10 @@ public abstract class AbstractSqsMessageHandler<T> implements SqsMessageHandler<
                     LOGGER.debug("Calling execute...");
                 }
                 execute(message)
-                        .whenComplete((result, e) -> {
-                            if(result != null) {
-                                handleSuccess();
-                            } else if(e != null) {
-                                handleSuccess();
-                            } else {
-                                handleSuccess();
-                            }
+                        .whenComplete((result, e) -> handleSqsMessageProcessResult(result, e, message))
+                        .exceptionallyAsync(e -> {
+                            handleException(message, e);
+                            return null;
                         });
             } catch (final Exception e) {
                 LOGGER.error("Exception while handling Sqs Message: [" + this.getClass() + "]: " + e, e);
@@ -128,6 +124,16 @@ public abstract class AbstractSqsMessageHandler<T> implements SqsMessageHandler<
         }
     }
 
+    private void handleSqsMessageProcessResult(Object result, Throwable e, T message) {
+        if(result != null) {
+            handleSuccess();
+        } else if(e != null) {
+            handleException(message, e);
+        } else {
+            handleSuccess();
+        }
+    }
+
     private void changeVisibility(final int visibilityTimeout) {
         final SqsMessageSenderInjector injector = ((SqsMessageSenderInjector) this);
         final SqsMessageClient sqsMessageClient = injector.sqsMessageClient();
@@ -138,6 +144,7 @@ public abstract class AbstractSqsMessageHandler<T> implements SqsMessageHandler<
     }
 
 
+    @SuppressWarnings("ConstantValue")
     private boolean isExceptionInstance(final Class<?> exceptionClass, final Class<? extends Exception> e) {
         if(exceptionClass != Object.class && (exceptionClass == e)) {
             return true;

@@ -14,10 +14,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClientBuilder;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -46,11 +51,43 @@ public class DynamoDbAutoConfiguration {
         return builder;
     }
 
+    @Bean(name = "dynamoDbClientBuilder")
+    @ConditionalOnBean(SdkHttpClient.class)
+    public DynamoDbClientBuilder dynamoDbClientBuilder(final SdkHttpClient selectedSdkHttpClient,
+                                                       final AwsEnvironmentProperties awsEnvironmentProperties) throws URISyntaxException {
+
+        final var builder = DynamoDbClient
+                .builder()
+                .region(Region.of(awsEnvironmentProperties.getRegion()))
+                .httpClient(selectedSdkHttpClient);
+
+        if(awsEnvironmentProperties.isLocalAwsMode() && !StringUtils.isEmpty(awsEnvironmentProperties.getLocalAwsEndpoint())) {
+            return builder.endpointOverride(new URI(awsEnvironmentProperties.getLocalAwsEndpoint()));
+        }
+
+        return builder;
+    }
+
     @Bean(name = "dynamoDbAsyncClientBuilder")
     @ConditionalOnMissingBean(SdkAsyncHttpClient.class)
     public DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder2(final AwsEnvironmentProperties awsEnvironmentProperties) throws URISyntaxException {
 
         final var builder = DynamoDbAsyncClient
+                .builder()
+                .region(Region.of(awsEnvironmentProperties.getRegion()));
+
+        if(awsEnvironmentProperties.isLocalAwsMode() && !StringUtils.isEmpty(awsEnvironmentProperties.getLocalAwsEndpoint())) {
+            return builder.endpointOverride(new URI(awsEnvironmentProperties.getLocalAwsEndpoint()));
+        }
+
+        return builder;
+    }
+
+    @Bean(name = "dynamoDbClientBuilder")
+    @ConditionalOnMissingBean(SdkHttpClient.class)
+    public DynamoDbClientBuilder dynamoDbClientBuilder2(final AwsEnvironmentProperties awsEnvironmentProperties) throws URISyntaxException {
+
+        final var builder = DynamoDbClient
                 .builder()
                 .region(Region.of(awsEnvironmentProperties.getRegion()));
 
@@ -77,6 +114,36 @@ public class DynamoDbAutoConfiguration {
     @ConditionalOnProperty(prefix = "org.awsutils.aws", value = {"region"})
     public DynamoDbAsyncClient amazonDynamoDBEnv(final DynamoDbAsyncClientBuilder dynamoDbAsyncClientBuilder) {
         return dynamoDbAsyncClientBuilder.build();
+    }
+
+    @Bean
+    @ConditionalOnBean(DynamoDbAsyncClient.class)
+    public DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient(final DynamoDbAsyncClient dynamoDbAsyncClient) {
+        return DynamoDbEnhancedAsyncClient.builder().dynamoDbClient(dynamoDbAsyncClient).build();
+    }
+
+    @Bean
+    @ConditionalOnBean(name = "staticCredentialsProvider")
+    @ConditionalOnProperty(prefix = "org.awsutils.aws", value = {"region"})
+    public DynamoDbClient amazonDynamoSyncDB(final AwsCredentialsProvider staticCredentialsProvider,
+                                             final DynamoDbClientBuilder dynamoDbAsyncClientBuilder) {
+
+        return dynamoDbAsyncClientBuilder
+                .credentialsProvider(staticCredentialsProvider)
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "staticCredentialsProvider")
+    @ConditionalOnProperty(prefix = "org.awsutils.aws", value = {"region"})
+    public DynamoDbClient amazonDynamoSyncDBEnv(final DynamoDbClientBuilder dynamoDbAsyncClientBuilder) {
+        return dynamoDbAsyncClientBuilder.build();
+    }
+
+    @Bean
+    @ConditionalOnBean(DynamoDbClient.class)
+    public DynamoDbEnhancedClient dynamoDbEnhancedClient(final DynamoDbClient dynamoDbClient) {
+        return DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDbClient).build();
     }
 
     @Bean(name = "entityValidationConfigMain")

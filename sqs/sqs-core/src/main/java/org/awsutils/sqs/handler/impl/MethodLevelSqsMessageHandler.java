@@ -29,8 +29,10 @@ public final class MethodLevelSqsMessageHandler<T> extends AbstractSqsMessageHan
             } else {
                 return CompletableFuture.completedFuture(returnVal);
             }
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw (e.getCause() instanceof RuntimeException ex ? ex: new RuntimeException(e));
         }
     }
 
