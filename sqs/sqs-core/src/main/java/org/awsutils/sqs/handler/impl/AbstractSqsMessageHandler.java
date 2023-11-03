@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("unused")
 public abstract class AbstractSqsMessageHandler<T> implements SqsMessageHandler<T> {
     private T message;
     private String receiptHandle;
