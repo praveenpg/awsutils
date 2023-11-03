@@ -71,7 +71,7 @@ public class SqsMessageHandlerConfig {
                         }),
                         Utils.getMethod(AbstractSqsMessageHandler.class, "initialize", SqsMessage.class, String.class, String.class, Integer.class, Map.class, RateLimiter.class))));
 
-        handlerMapping.forEach((key, value) -> LOGGER.info(String.format("handlerMapping1: %s + -> %s", key, value)));
+        handlerMapping.forEach((key, value) -> LOGGER.info(String.format("Type handlerMapping: %s --> %s", key, value)));
 
         /*
             Will throw an NPE if there's no handlerMapping() entry for the given
@@ -85,7 +85,6 @@ public class SqsMessageHandlerConfig {
     public Map<String, Method> sqsMethodLevelMessageHandlerMapping() {
         final Map<String, Method> handlerMapping;
         // Those types in the noted package annotated with MessageHandler
-//        final Reflections reflections = new Reflections(sqsMessageListenerListProperties.getHandlerBasePackage(), new SubTypesScanner(false), TypesAnnotated);
         Reflections reflections = new Reflections(new ConfigurationBuilder()
                 .setUrls(ClasspathHelper.forPackage(sqsMessageListenerListProperties.getHandlerBasePackage())).setScanners(MethodsAnnotated));
         final Set<Method> annotated = reflections.getMethodsAnnotatedWith(MessageHandler.class).stream().filter(this::isSpringBean).collect(Collectors.toSet());
@@ -99,7 +98,7 @@ public class SqsMessageHandlerConfig {
         handlerMapping = tuples.stream().collect(Collectors.toMap(Tuple2::_1,
                 Tuple2::_2));
 
-        handlerMapping.forEach((key, value) -> LOGGER.info(String.format("handlerMapping1: %s + -> %s", key, value)));
+        handlerMapping.forEach((key, value) -> LOGGER.info(String.format("Method handlerMapping: %s --> %s", key, value)));
 
         /*
             Will throw an NPE if there's no handlerMapping() entry for the given
