@@ -24,6 +24,7 @@ import static org.awsutils.sqs.client.MessageConstants.SQS_MESSAGE_WRAPPER_PRESE
 public class SqsMessageClientImpl implements SqsMessageClient {
     private final SqsAsyncClient sqsAsyncClient;
     private final ConcurrentHashMap<String, String> queueUrlMap = new ConcurrentHashMap<>();
+    private static final int MAX_NUMBER_OF_MESSAGES = 10;
 
     public SqsMessageClientImpl(final SqsAsyncClient sqsAsyncClient) {
         this.sqsAsyncClient = sqsAsyncClient;
@@ -31,12 +32,11 @@ public class SqsMessageClientImpl implements SqsMessageClient {
 
     @Override
     public <T> CompletableFuture<SendMessageResponse> sendMessage(T sqsMessage, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> messageAttMap) {
-        final String finalMessage = sqsMessage instanceof String ? (String) sqsMessage : Utils.constructJson(sqsMessage);
-        final String queueUrl = getQueueUrl(queueName);
+        final String finalMessage = sqsMessage instanceof String str? str : Utils.constructJson(sqsMessage);
         final SendMessageRequest.Builder sendMessageRequestBuilder = SendMessageRequest.builder()
                 .messageBody(finalMessage)
                 .delaySeconds(delayInSeconds)
-                .queueUrl(queueUrl);
+                .queueUrl(getQueueUrl(queueName));
         final Map<String, String> finalMessageAttributes = !CollectionUtils.isEmpty(messageAttMap) ? new HashMap<>(messageAttMap) : new HashMap<>();
         finalMessageAttributes.put(SQS_MESSAGE_WRAPPER_PRESENT, "false");
 
@@ -44,7 +44,7 @@ public class SqsMessageClientImpl implements SqsMessageClient {
                 getSqsMessageAttributes(finalMessageAttributes)));
 
         if (log.isInfoEnabled()) {
-            log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}", queueUrl, sqsMessage));
+            log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}", getQueueUrl(queueName), sqsMessage));
         }
 
         return sqsAsyncClient.sendMessage(sendMessageRequestBuilder.build())
@@ -60,18 +60,17 @@ public class SqsMessageClientImpl implements SqsMessageClient {
                                                                   final Map<String, String> messageAttMap) {
 
         final String message = Utils.constructJson(sqsMessage);
-        final String queueUrl = getQueueUrl(queueName);
         final SendMessageRequest.Builder sendMessageRequestBuilder = SendMessageRequest.builder()
                 .messageBody(message)
                 .delaySeconds(delayInSeconds)
-                .queueUrl(queueUrl);
+                .queueUrl(getQueueUrl(queueName));
         final Map<String, String> finalMessageAttributes = !CollectionUtils.isEmpty(messageAttMap) ? new HashMap<>(messageAttMap) : new HashMap<>();
         finalMessageAttributes.put(SQS_MESSAGE_WRAPPER_PRESENT, "true");
 
         sendMessageRequestBuilder.messageAttributes(getSqsMessageAttributeValues(sqsMessage, getSqsMessageAttributes(finalMessageAttributes)));
 
         if (log.isInfoEnabled()) {
-            log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}", queueUrl, sqsMessage));
+            log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}", getQueueUrl(queueName), sqsMessage));
         }
 
         return sqsAsyncClient.sendMessage(sendMessageRequestBuilder.build()).thenApplyAsync(response ->
@@ -96,7 +95,7 @@ public class SqsMessageClientImpl implements SqsMessageClient {
 
     @Override
     public <T> CompletableFuture<SendMessageBatchResponse> sendMessage(List<T> sqsMessages, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> attMap) {
-        if (!CollectionUtils.isEmpty(sqsMessages) || sqsMessages.size() <= 10) {
+        if (!CollectionUtils.isEmpty(sqsMessages) && sqsMessages.size() <= 10) {
             final Map<String, MessageAttributeValue> attributeValueMap = getSqsMessageAttributes(constructFinalMessageAttributeMap(transactionId, messageType, attMap));
             final String queueUrl = getQueueUrl(queueName);
             final SendMessageBatchRequest request = SendMessageBatchRequest.builder().entries(
@@ -128,12 +127,12 @@ public class SqsMessageClientImpl implements SqsMessageClient {
                                                                        final Integer delayInSeconds,
                                                                        final Map<String, String> attMap) {
 
-        if (!CollectionUtils.isEmpty(sqsMessages) || sqsMessages.size() <= 10) {
+        if (!CollectionUtils.isEmpty(sqsMessages) && sqsMessages.size() <= MAX_NUMBER_OF_MESSAGES) {
             final Map<String, MessageAttributeValue> attributeValueMap = getSqsMessageAttributes(constructFinalMessageAttributeMap(sqsMessages.get(0), attMap));
             final String queueUrl = getQueueUrl(queueName);
             final Set<String> uniqueTransactionIds = sqsMessages.stream()
-                    .filter(sqsMessage -> !StringUtils.isEmpty(sqsMessage.getTransactionId()))
                     .map(SqsMessage::getTransactionId)
+                    .filter(StringUtils::hasLength)
                     .collect(Collectors.toSet());
             final boolean areTransactionIdsUnique = !CollectionUtils.isEmpty(uniqueTransactionIds) && (uniqueTransactionIds.size() == sqsMessages.size());
             final SendMessageBatchRequest request = SendMessageBatchRequest.builder().entries(
@@ -211,7 +210,7 @@ public class SqsMessageClientImpl implements SqsMessageClient {
 
         final ImmutableMap.Builder<String, MessageAttributeValue> builder = ImmutableMap.<String, MessageAttributeValue>builder().putAll(attributeValueMap);
 
-        if (!StringUtils.isEmpty(sqsMessage.getTransactionId())) {
+        if (StringUtils.hasLength(sqsMessage.getTransactionId())) {
             builder.put(MessageConstants.TRANSACTION_ID, MessageAttributeValue.builder().dataType(MessageConstants.MESSAGE_ATTRIBUTE_TYPE).stringValue(sqsMessage.getTransactionId()).build());
         }
 
@@ -225,7 +224,7 @@ public class SqsMessageClientImpl implements SqsMessageClient {
 
         final ImmutableMap.Builder<String, MessageAttributeValue> builder = ImmutableMap.<String, MessageAttributeValue>builder().putAll(attributeValueMap);
 
-        if (!StringUtils.isEmpty(transactionId)) {
+        if (StringUtils.hasLength(transactionId)) {
             builder.put(MessageConstants.TRANSACTION_ID, MessageAttributeValue.builder().dataType(MessageConstants.MESSAGE_ATTRIBUTE_TYPE).stringValue(transactionId).build());
         }
 

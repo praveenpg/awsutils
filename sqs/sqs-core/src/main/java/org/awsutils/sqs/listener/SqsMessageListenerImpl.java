@@ -85,6 +85,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                                    final String messageHandlerRateLimiterName,
                                    final String statusProperty,
                                    final Integer waitTimeInSeconds) {
+
         this.rateLimiterName = rateLimiterName;
         this.messageHandlerRateLimiterName = messageHandlerRateLimiterName;
         this.waitTimeInSeconds = waitTimeInSeconds;
@@ -102,7 +103,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                 environment.getProperty(statusProperty, Boolean.class, true) : true;
         this.queueName = queueName;
         this.queueUrl = queueUrl;
-        this.queueUrlFunc = StringUtils.hasLength(queueUrl) ? qName -> this.queueUrl : qName -> getQueueUrl(sqsMessageClient, qName);
+        this.queueUrlFunc = StringUtils.hasLength(queueUrl) ? qName -> this.queueUrl : qName
+                -> getQueueUrl(sqsMessageClient, qName);
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("Creating SqsMessageListener: {}, Queue: {}", listenerName, queueName);
         }
@@ -125,7 +127,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
             setRateLimiters();
 
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(MessageFormat.format("Receiving messages after starter in listener [{0}]", listenerName));
+                LOGGER.debug(MessageFormat.format("Receiving messages after starter in listener [{0}]",
+                        listenerName));
             }
 
             try {
@@ -148,7 +151,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
             }
 
             if (messageHandlerRateLimiter == null && StringUtils.hasLength(messageHandlerRateLimiterName)) {
-                this.messageHandlerRateLimiter = RateLimiterFactory.getInstance().getRateLimiter(messageHandlerRateLimiterName);
+                this.messageHandlerRateLimiter = RateLimiterFactory.getInstance()
+                        .getRateLimiter(messageHandlerRateLimiterName);
             }
         } catch (final Exception ex) {
             log.error("Exception: {}", ex, ex);
@@ -163,7 +167,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
             boolean proceed = true;
 
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(MessageFormat.format("Checking for messages from SQS in listener [{0}]: {1}", listenerName, queueUrlFunc.apply(queueName)));
+                LOGGER.debug(MessageFormat.format("Checking for messages from SQS in listener [{0}]: {1}",
+                        listenerName, queueUrlFunc.apply(queueName)));
             }
 
             while (proceed) {
@@ -174,13 +179,15 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                 proceed = processSqsMessages(messages, messageCounter);
 
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug(MessageFormat.format("Proceed with receiving messages [{0}]: {1}", listenerName, proceed));
+                    LOGGER.debug(MessageFormat.format("Proceed with receiving messages [{0}]: {1}", listenerName,
+                            proceed));
                 }
             }
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(MessageFormat.format("Total number of messages received: {0}", messageCounter));
-                LOGGER.debug(MessageFormat.format("Rate limiter used: {0}", (rateLimiter != null ? rateLimiter.getRateLimiterName() : null)));
+                LOGGER.debug(MessageFormat.format("Rate limiter used: {0}", (rateLimiter != null ?
+                        rateLimiter.getRateLimiterName() : null)));
             }
         });
     }
@@ -204,7 +211,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                     propertyReaderFunction.apply(maximumNumberOfMessagesKey)) > messageCounter;
         } else {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(MessageFormat.format("List of messages is empty in listener [{0}]: {1}", listenerName, messages != null ? messages.size() : 0));
+                LOGGER.debug(MessageFormat.format("List of messages is empty in listener [{0}]: {1}",
+                        listenerName, messages != null ? messages.size() : 0));
             }
 
             proceed = false;
@@ -216,8 +224,9 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     @SuppressWarnings("FunctionalExpressionCanBeFolded")
     private void processSqsMessage(final Message message) {
         final long startTime = System.currentTimeMillis();
-        final ChangeMessageVisibilityResponse changeVisibilityResp = getResultFromFuture(sqsMessageClient.changeVisibility(queueUrlFunc.apply(queueName),
-                message.receiptHandle(), (int) CHANGE_VISIBILITY_PERIOD_IN_SECONDS));
+        final ChangeMessageVisibilityResponse changeVisibilityResp = getResultFromFuture(sqsMessageClient
+                .changeVisibility(queueUrlFunc.apply(queueName), message.receiptHandle(),
+                        (int) CHANGE_VISIBILITY_PERIOD_IN_SECONDS));
         final Runnable action0 = () -> {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Processing message: " + message.messageId());
@@ -246,9 +255,11 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     private void processMessage(final Message message, final long startTime) {
         try {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(MessageFormat.format("Processing message in listener[{0}]: {1}", listenerName, message));
+                LOGGER.debug(MessageFormat.format("Processing message in listener[{0}]: {1}",
+                        listenerName, message));
             }
-            final long timeTakenToStartProcessing = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime);
+            final long timeTakenToStartProcessing = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()
+                    - startTime);
 
             if (timeTakenToStartProcessing < CHANGE_VISIBILITY_PERIOD_IN_SECONDS) {
                 final Tuple3<SqsMessage<?>, Map<String, String>, TaskInput<?>> sqsMessage;
@@ -256,10 +267,12 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                 final String receiptHandle = message.receiptHandle();
                 final String receiveCount = message.attributes().get(MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT);
                 final SqsMessageHandler<?> messageHandler;
-                final Map<String, String> messageAttributes = message.messageAttributes().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, a -> a.getValue().stringValue()));
+                final Map<String, String> messageAttributes = message.messageAttributes().entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, a -> a.getValue().stringValue()));
                 final String sqsMessageWrapperPresent = messageAttributes.get(MessageConstants.SQS_MESSAGE_WRAPPER_PRESENT);
 
-                if((StringUtils.hasLength(sqsMessageWrapperPresent) && "true".equalsIgnoreCase(sqsMessageWrapperPresent)) || message.body().contains("\"messageType")) {
+                if((StringUtils.hasLength(sqsMessageWrapperPresent) && "true".equalsIgnoreCase(sqsMessageWrapperPresent))
+                        || message.body().contains("\"messageType")) {
                     sqsMessage = constructSqsMessage(body, receiptHandle);
                     messageHandler = messageHandlerFactory.getMessageHandler(sqsMessage._1(),
                             receiptHandle,
@@ -272,10 +285,21 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug(MessageFormat.format("Handling message by {0}", messageHandler));
                     }
-                } else {
+                } else if(StringUtils.hasLength(messageAttributes.get(MessageConstants.MESSAGE_TYPE))){
                     final String messageType = messageAttributes.get(MessageConstants.MESSAGE_TYPE);
                     final String transactionId = messageAttributes.get(MessageConstants.TRANSACTION_ID);
-                    messageHandler = messageHandlerFactory.getMessageHandler(body, messageType, transactionId, receiptHandle, queueUrl, StringUtils.hasLength(receiveCount) ? Integer.parseInt(receiveCount) : 0, messageAttributes, messageHandlerRateLimiter);
+
+                    messageHandler = messageHandlerFactory.getMessageHandler(body,
+                            messageType,
+                            transactionId,
+                            receiptHandle,
+                            queueUrl,
+                            StringUtils.hasLength(receiveCount) ? Integer.parseInt(receiveCount) : 0,
+                            messageAttributes,
+                            messageHandlerRateLimiter);
+                } else {
+                    throw new UtilsException("INVALID_MESSAGE", "The message body should be of SqsMessage type or " +
+                            "should contain `messageType` attribute");
                 }
 
                 messageHandler.handle();
@@ -288,7 +312,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     }
 
     private void handleUtilsException(final Message message, final UtilsException e) {
-        if ("NO_HANDLER_FOR_MESSAGE_TYPE".equalsIgnoreCase(e.getErrorType()) || "INVALID_JSON".equalsIgnoreCase(e.getErrorType())) {
+        if ("NO_HANDLER_FOR_MESSAGE_TYPE".equalsIgnoreCase(e.getErrorType()) || "INVALID_JSON"
+                .equalsIgnoreCase(e.getErrorType())) {
             LOGGER.error(MessageFormat.format("Exception in listener[{0}]: {1}", listenerName, e.getMessage()), e);
             sqsMessageClient.deleteMessage(queueUrlFunc.apply(queueName), message.receiptHandle());
         } else {
@@ -296,7 +321,9 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         }
     }
 
-    private Tuple3<SqsMessage<?>, Map<String, String>, TaskInput<?>> constructSqsMessage(final String body, final String receiptHandle) {
+    private Tuple3<SqsMessage<?>, Map<String, String>, TaskInput<?>> constructSqsMessage(final String body,
+                                                                                         final String receiptHandle) {
+
         final SqsMessage<?> sqsMessage;
         final Map<String, String> attributes;
 
@@ -309,7 +336,9 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private Tuple3<SqsMessage<?>, Map<String, String>, TaskInput<?>> processSnsNotification(final String body, final String receiptHandle) {
+    private Tuple3<SqsMessage<?>, Map<String, String>, TaskInput<?>> processSnsNotification(final String body,
+                                                                                            final String receiptHandle) {
+
         final SqsMessage<?> sqsMessage;
         final SnsSubscriptionMessage snsSubscriptionMessage = Utils.constructFromJson(SnsSubscriptionMessage.class, body);
         final String snsMessage = snsSubscriptionMessage.getMessage();
@@ -329,10 +358,12 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
             sqsMessage = taskInput.getInput();
         } else {
             taskInput = null;
-            sqsMessage = Utils.constructFromJson(SqsMessage.class, snsMessage, cause -> new UtilsException("INVALID_JSON", cause));
+            sqsMessage = Utils.constructFromJson(SqsMessage.class, snsMessage, cause
+                    -> new UtilsException("INVALID_JSON", cause));
         }
         messAttr = CollectionUtils.isEmpty(messageAttributes) ? null :
-                messageAttributes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, b -> b.getValue().getValue()));
+                messageAttributes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                        b -> b.getValue().getValue()));
 
         return Tuple.of(sqsMessage, messAttr, taskInput);
     }
@@ -352,7 +383,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         } catch (final InterruptedException e) {
             return Utils.handleInterruptedException(e, (Supplier<List<Message>>) Collections::emptyList);
         } catch (final ExecutionException e) {
-            LOGGER.error(MessageFormat.format("Exception in receiveMessages in listener[{0}]: {1}", listenerName, e), e);
+            LOGGER.error(MessageFormat.format("Exception in receiveMessages in listener[{0}]: {1}",
+                    listenerName, e), e);
 
             throw new UtilsException("UNKNOWN_ERROR", e);
         }

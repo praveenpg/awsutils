@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.awsutils</groupId>
         <artifactId>awsutils-starters</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2-beta7</version>
     </parent>
 
     <artifactId>common-autoconfigure</artifactId>
@@ -38,6 +38,10 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>aws-crt-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>apache-client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.awsutils</groupId>
