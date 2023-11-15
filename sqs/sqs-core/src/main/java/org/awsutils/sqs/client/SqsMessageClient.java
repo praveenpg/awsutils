@@ -49,6 +49,43 @@ public interface SqsMessageClient {
         return sendMessage(sqsMessages, queueName, 0);
     }
 
+    default <T> SendMessageResponse sendMessageSync(final T message, String messageType, String transactionId, final String queueName) {
+        return sendMessageSync(message, messageType, transactionId, queueName,  BigInteger.ZERO.intValue(), Collections.emptyMap());
+    }
+    default <T> SendMessageResponse sendMessageSync(final SqsMessage<T> sqsMessage, final String queueName) {
+        return sendMessageSync(sqsMessage, queueName, BigInteger.ZERO.intValue(), Collections.emptyMap());
+    }
+
+    default <T> SendMessageResponse sendMessageSync(final T message, String messageType, String transactionId, final String queueName, final Integer delayInSeconds) {
+        return sendMessageSync(message, messageType, transactionId, queueName, delayInSeconds, Collections.emptyMap());
+    }
+
+    default <T> SendMessageResponse sendMessageSync(final SqsMessage<T> sqsMessage, final String queueName, final Integer delayInSeconds) {
+        return sendMessageSync(sqsMessage, queueName, delayInSeconds, Collections.emptyMap());
+    }
+
+    default <T> SendMessageBatchResponse sendMessageSync(final List<T> message, String messageType, String transactionId, final String queueName) {
+        return sendMessageSync(message, messageType, transactionId, queueName, BigInteger.ZERO.intValue());
+    }
+
+    default <T> SendMessageBatchResponse sendMessageSync(final SqsBatchMessage<T> sqsBatchMessage, final String queueName) {
+        return sendMessageSync(sqsBatchMessage, queueName, BigInteger.ZERO.intValue());
+    }
+
+
+    default <T> SendMessageBatchResponse sendMessageSync(final List<T> message, String messageType, String transactionId, final String queueName, final Integer delayInSeconds) {
+        return sendMessageSync(message, messageType, transactionId, queueName, delayInSeconds, Collections.emptyMap());
+    }
+    default <T> SendMessageBatchResponse sendMessageSync(final SqsBatchMessage<T> sqsBatchMessage, final String queueName, final Integer delayInSeconds) {
+        return sendMessageSync(sqsBatchMessage, queueName, delayInSeconds, Collections.emptyMap());
+    }
+
+    default <T> SendMessageBatchResponse sendMessageSync(final List<SqsMessage<T>> sqsMessages, final String queueName) {
+        return sendMessageSync(sqsMessages, queueName, 0);
+    }
+
+    <T> SendMessageResponse sendMessageSync(T sqsMessage, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> messageAttMap);
+
     <T> CompletableFuture<SendMessageResponse> sendMessage(SqsMessage<T> sqsMessage, String queueName, Integer delayInSeconds, Map<String, String> messageAttMap);
 
     <T> CompletableFuture<SendMessageResponse> sendMessage(T sqsMessage, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> messageAttMap);
@@ -57,16 +94,44 @@ public interface SqsMessageClient {
         return sendMessage(sqsMessage, queueName, delayInSeconds, Collections.emptyMap());
     }
 
+    default <T> SendMessageBatchResponse sendMessageSync(final List<SqsMessage<T>> sqsMessage, final String queueName, final Integer delayInSeconds) {
+        return sendMessageSync(sqsMessage, queueName, delayInSeconds, Collections.emptyMap());
+    }
+
+    <T> SendMessageResponse sendMessageSync(SqsMessage<T> sqsMessage,
+                                            String queueName,
+                                            Integer delayInSeconds,
+                                            Map<String, String> messageAttMap);
+
     <T> CompletableFuture<SendMessageBatchResponse> sendMessage(List<T> sqsMessages, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> attMap);
+
+    <T> SendMessageBatchResponse sendMessageSync(List<T> sqsMessages, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> attMap);
+
     <T> CompletableFuture<SendMessageBatchResponse> sendMessage(List<SqsMessage<T>> sqsMessages, String queueName, Integer delayInSeconds, Map<String, String> attMap);
+
+    <T> SendMessageBatchResponse sendMessageSync(List<SqsMessage<T>> sqsMessages,
+                                                 String queueName,
+                                                 Integer delayInSeconds,
+                                                 Map<String, String> attMap);
 
     String getQueueUrl(String queueName);
 
     CompletableFuture<DeleteMessageResponse> deleteMessage(String queueUrl, String receiptHandle);
+
+    DeleteMessageResponse deleteMessageSync(String queueUrl,
+                                            String receiptHandle);
 
     CompletableFuture<ChangeMessageVisibilityResponse> changeVisibility(String queueUrl, String receiptHandle, Integer visibilityTimeout);
 
     default <T> CompletableFuture<SendMessageBatchResponse> sendMessage(final SqsBatchMessage<T> sqsBatchMessage, final String queueName, final Integer delayInSeconds, Map<String, String> attMap) {
         return sendMessage(sqsBatchMessage.sqsMessages(), queueName, delayInSeconds, attMap);
     }
+
+    default <T> SendMessageBatchResponse sendMessageSync(final SqsBatchMessage<T> sqsBatchMessage, final String queueName, final Integer delayInSeconds, Map<String, String> attMap) {
+        return sendMessageSync(sqsBatchMessage.sqsMessages(), queueName, delayInSeconds, attMap);
+    }
+
+    ChangeMessageVisibilityResponse changeVisibilitySync(String queueUrl,
+                                                         String receiptHandle,
+                                                         Integer visibilityTimeout);
 }

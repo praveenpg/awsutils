@@ -16,7 +16,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
+import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -30,6 +32,9 @@ public class MessageHandlerFactoryConfig {
     private final Map<String, Tuple2<Constructor<AbstractSqsMessageHandler>, Method>> handlerMapping;
     private final SqsAsyncClient sqsAsyncClient;
     private final SnsAsyncClient snsAsyncClient;
+
+    private final SqsClient sqsSyncClient;
+    private final SnsClient snsSyncClient;
     private final ApplicationContext applicationContext;
     private final Environment environment;
     private final Map<String, Method> methodHandlerMapping;
@@ -37,7 +42,9 @@ public class MessageHandlerFactoryConfig {
 
     public MessageHandlerFactoryConfig(final SqsAsyncClient sqsAsyncClient,
                                        final SnsAsyncClient snsAsyncClient, final ApplicationContext applicationContext,
-                                       final Environment environment) throws InvocationTargetException, IllegalAccessException {
+                                       SqsClient sqsSyncClient, SnsClient snsSyncClient, final Environment environment) throws InvocationTargetException, IllegalAccessException {
+        this.sqsSyncClient = sqsSyncClient;
+        this.snsSyncClient = snsSyncClient;
 
         final Method method = Utils.getMethod(ApplicationContextUtils.class, "init", ApplicationContext.class, Environment.class);
         method.invoke(null, applicationContext, environment);
@@ -57,7 +64,7 @@ public class MessageHandlerFactoryConfig {
 
     @Bean
     public SqsMessageClient sqsMessageClient() {
-        return new SqsMessageClientImpl(sqsAsyncClient);
+        return new SqsMessageClientImpl(sqsAsyncClient, sqsSyncClient);
     }
 
     @Bean

@@ -1,13 +1,14 @@
 package org.awsutils.sqs.client;
 
 import com.google.common.collect.ImmutableMap;
-import org.awsutils.common.exceptions.UtilsException;
-import org.awsutils.sqs.message.SqsMessage;
-import org.awsutils.common.util.Utils;
 import lombok.extern.slf4j.Slf4j;
+import org.awsutils.common.exceptions.UtilsException;
+import org.awsutils.common.util.Utils;
+import org.awsutils.sqs.message.SqsMessage;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
 import java.text.MessageFormat;
@@ -15,6 +16,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.awsutils.sqs.client.MessageConstants.SQS_MESSAGE_WRAPPER_PRESENT;
@@ -23,21 +26,154 @@ import static org.awsutils.sqs.client.MessageConstants.SQS_MESSAGE_WRAPPER_PRESE
 @Slf4j
 public class SqsMessageClientImpl implements SqsMessageClient {
     private final SqsAsyncClient sqsAsyncClient;
+
+    private final SqsClient sqsSyncClient;
     private final ConcurrentHashMap<String, String> queueUrlMap = new ConcurrentHashMap<>();
     private static final int MAX_NUMBER_OF_MESSAGES = 10;
 
-    public SqsMessageClientImpl(final SqsAsyncClient sqsAsyncClient) {
+    public SqsMessageClientImpl(final SqsAsyncClient sqsAsyncClient, SqsClient sqsSyncClient) {
         this.sqsAsyncClient = sqsAsyncClient;
+        this.sqsSyncClient = sqsSyncClient;
     }
 
     @Override
     public <T> CompletableFuture<SendMessageResponse> sendMessage(T sqsMessage, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> messageAttMap) {
-        final String finalMessage = sqsMessage instanceof String str? str : Utils.constructJson(sqsMessage);
+
+        return sqsAsyncClient.sendMessage(getSendMessageRequestBuilder(sqsMessage, messageType, transactionId, queueName,
+                        delayInSeconds, messageAttMap).build())
+                .thenApplyAsync(response -> handleSqsResponse(
+                        sqsMessage, messageType, queueName, delayInSeconds, response));
+    }
+
+    @Override
+    public <T> SendMessageResponse sendMessageSync(T sqsMessage, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> messageAttMap) {
+        return handleSqsResponse(sqsMessage, messageType, queueName, delayInSeconds, sqsSyncClient.sendMessage(
+                getSendMessageRequestBuilder(sqsMessage, messageType,
+                        transactionId, queueName, delayInSeconds, messageAttMap).build()));
+    }
+
+
+    @Override
+    public <T> CompletableFuture<SendMessageResponse> sendMessage(final SqsMessage<T> sqsMessage,
+                                                                  final String queueName,
+                                                                  final Integer delayInSeconds,
+                                                                  final Map<String, String> messageAttMap) {
+
+        return sqsAsyncClient.sendMessage(getSendMessageRequestBuilder(sqsMessage, queueName, delayInSeconds, messageAttMap).build())
+                .thenApplyAsync(response -> handleSqsResponse(sqsMessage, queueName, delayInSeconds, response));
+    }
+
+
+    @Override
+    public <T> SendMessageResponse sendMessageSync(final SqsMessage<T> sqsMessage,
+                                                   final String queueName,
+                                                   final Integer delayInSeconds,
+                                                   final Map<String, String> messageAttMap) {
+
+
+        return handleSqsResponse(sqsMessage, queueName, delayInSeconds, sqsSyncClient.sendMessage(
+                getSendMessageRequestBuilder(sqsMessage, queueName, delayInSeconds, messageAttMap).build()));
+    }
+
+
+    @Override
+    public <T> CompletableFuture<SendMessageBatchResponse> sendMessage(List<T> sqsMessages, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> attMap) {
+
+        return sendMessage(sqsMessages, messageType, transactionId, queueName, delayInSeconds, attMap,
+                sqsAsyncClient::sendMessageBatch);
+    }
+
+    @Override
+    public <T> SendMessageBatchResponse sendMessageSync(List<T> sqsMessages,
+                                                        String messageType,
+                                                        String transactionId,
+                                                        String queueName,
+                                                        Integer delayInSeconds,
+                                                        Map<String, String> attMap) {
+
+        return sendMessage(sqsMessages, messageType, transactionId, queueName, delayInSeconds, attMap,
+                sqsSyncClient::sendMessageBatch);
+    }
+
+    @Override
+    public <T> CompletableFuture<SendMessageBatchResponse> sendMessage(final List<SqsMessage<T>> sqsMessages,
+                                                                       final String queueName,
+                                                                       final Integer delayInSeconds,
+                                                                       final Map<String, String> attMap) {
+
+        return validateAndSendMessage(sqsMessages, () ->
+                sendMessage(sqsMessages, queueName, delayInSeconds, attMap, sqsAsyncClient::sendMessageBatch));
+    }
+
+    @Override
+    public <T> SendMessageBatchResponse sendMessageSync(final List<SqsMessage<T>> sqsMessages,
+                                                        final String queueName,
+                                                        final Integer delayInSeconds,
+                                                        final Map<String, String> attMap) {
+
+        return validateAndSendMessage(sqsMessages, () ->
+                sendMessage(sqsMessages, queueName, delayInSeconds, attMap, sqsSyncClient::sendMessageBatch));
+    }
+
+
+    @Override
+    public String getQueueUrl(final String queueName) {
+        return queueUrlMap.computeIfAbsent(queueName, s -> queueUrl(queueName));
+    }
+
+    @Override
+    public CompletableFuture<DeleteMessageResponse> deleteMessage(final String queueUrl,
+                                                                  final String receiptHandle) {
+
+        return deleteMessage(queueUrl, receiptHandle, sqsAsyncClient::deleteMessage);
+    }
+
+    @Override
+    public DeleteMessageResponse deleteMessageSync(final String queueUrl,
+                                                   final String receiptHandle) {
+
+        final DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
+                .queueUrl(queueUrl)
+                .receiptHandle(receiptHandle)
+                .build();
+
+        if (log.isDebugEnabled()) {
+            log.debug(MessageFormat.format("Deleting message  from Queue: {0} with receiptHandle: {1}", queueUrl, receiptHandle));
+        }
+        return deleteMessage(queueUrl, receiptHandle, sqsSyncClient::deleteMessage);
+    }
+
+
+    @Override
+    public CompletableFuture<ChangeMessageVisibilityResponse> changeVisibility(final String queueUrl,
+                                                                               final String receiptHandle,
+                                                                               final Integer visibilityTimeout) {
+
+        return changeVisibility(queueUrl, receiptHandle, visibilityTimeout, sqsAsyncClient::changeMessageVisibility);
+    }
+
+    @Override
+    public ChangeMessageVisibilityResponse changeVisibilitySync(final String queueUrl,
+                                                                final String receiptHandle,
+                                                                final Integer visibilityTimeout) {
+
+        return changeVisibility(queueUrl, receiptHandle, visibilityTimeout, sqsSyncClient::changeMessageVisibility);
+    }
+
+    private <T> SendMessageRequest.Builder getSendMessageRequestBuilder(final T sqsMessage,
+                                                                        final String messageType,
+                                                                        final String transactionId,
+                                                                        final String queueName,
+                                                                        final Integer delayInSeconds,
+                                                                        final Map<String, String> messageAttMap) {
+
+        final String finalMessage = sqsMessage instanceof String str ? str : Utils.constructJson(sqsMessage);
         final SendMessageRequest.Builder sendMessageRequestBuilder = SendMessageRequest.builder()
                 .messageBody(finalMessage)
                 .delaySeconds(delayInSeconds)
                 .queueUrl(getQueueUrl(queueName));
         final Map<String, String> finalMessageAttributes = !CollectionUtils.isEmpty(messageAttMap) ? new HashMap<>(messageAttMap) : new HashMap<>();
+
         finalMessageAttributes.put(SQS_MESSAGE_WRAPPER_PRESENT, "false");
 
         sendMessageRequestBuilder.messageAttributes(getSqsMessageAttributeValues(messageType, transactionId,
@@ -47,24 +183,20 @@ public class SqsMessageClientImpl implements SqsMessageClient {
             log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}", getQueueUrl(queueName), sqsMessage));
         }
 
-        return sqsAsyncClient.sendMessage(sendMessageRequestBuilder.build())
-                .thenApplyAsync(response -> handleSqsResponse(sqsMessage, messageType, queueName, delayInSeconds, response));
+        return sendMessageRequestBuilder;
     }
 
+    private <T> SendMessageRequest.Builder getSendMessageRequestBuilder(final SqsMessage<T> sqsMessage,
+                                                                        final String queueName,
+                                                                        final Integer delayInSeconds,
+                                                                        final Map<String, String> messageAttMap) {
 
-
-    @Override
-    public <T> CompletableFuture<SendMessageResponse> sendMessage(final SqsMessage<T> sqsMessage,
-                                                                  final String queueName,
-                                                                  final Integer delayInSeconds,
-                                                                  final Map<String, String> messageAttMap) {
-
-        final String message = Utils.constructJson(sqsMessage);
         final SendMessageRequest.Builder sendMessageRequestBuilder = SendMessageRequest.builder()
-                .messageBody(message)
+                .messageBody(Utils.constructJson(sqsMessage))
                 .delaySeconds(delayInSeconds)
                 .queueUrl(getQueueUrl(queueName));
         final Map<String, String> finalMessageAttributes = !CollectionUtils.isEmpty(messageAttMap) ? new HashMap<>(messageAttMap) : new HashMap<>();
+
         finalMessageAttributes.put(SQS_MESSAGE_WRAPPER_PRESENT, "true");
 
         sendMessageRequestBuilder.messageAttributes(getSqsMessageAttributeValues(sqsMessage, getSqsMessageAttributes(finalMessageAttributes)));
@@ -72,12 +204,12 @@ public class SqsMessageClientImpl implements SqsMessageClient {
         if (log.isInfoEnabled()) {
             log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}", getQueueUrl(queueName), sqsMessage));
         }
-
-        return sqsAsyncClient.sendMessage(sendMessageRequestBuilder.build()).thenApplyAsync(response ->
-                handleSqsResponse(sqsMessage, queueName, delayInSeconds, response));
+        return sendMessageRequestBuilder;
     }
 
-    private static <T> Map<String, String> constructFinalMessageAttributeMap(SqsMessage<T> sqsMessage, Map<String, String> messageAttMap) {
+    private static <T> Map<String, String> constructFinalMessageAttributeMap(final SqsMessage<T> sqsMessage,
+                                                                             final Map<String, String> messageAttMap) {
+
         final Map<String, String> finalMessageAttributes = !CollectionUtils.isEmpty(messageAttMap) ? new HashMap<>(messageAttMap) : new HashMap<>();
 
         finalMessageAttributes.put(SQS_MESSAGE_WRAPPER_PRESENT, "true");
@@ -85,7 +217,10 @@ public class SqsMessageClientImpl implements SqsMessageClient {
         return finalMessageAttributes;
     }
 
-    private static <T> Map<String, String> constructFinalMessageAttributeMap(String transactionId, String messageType, Map<String, String> messageAttMap) {
+    private static <T> Map<String, String> constructFinalMessageAttributeMap(final String transactionId,
+                                                                             final String messageType,
+                                                                             final Map<String, String> messageAttMap) {
+
         final Map<String, String> finalMessageAttributes = !CollectionUtils.isEmpty(messageAttMap) ? new HashMap<>(messageAttMap) : new HashMap<>();
 
         finalMessageAttributes.put(SQS_MESSAGE_WRAPPER_PRESENT, "false");
@@ -93,9 +228,15 @@ public class SqsMessageClientImpl implements SqsMessageClient {
         return finalMessageAttributes;
     }
 
-    @Override
-    public <T> CompletableFuture<SendMessageBatchResponse> sendMessage(List<T> sqsMessages, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> attMap) {
-        if (!CollectionUtils.isEmpty(sqsMessages) && sqsMessages.size() <= 10) {
+    private <T, A> A sendMessage(final List<T> sqsMessages,
+                                 final String messageType,
+                                 final String transactionId,
+                                 final String queueName,
+                                 final Integer delayInSeconds,
+                                 final Map<String, String> attMap,
+                                 final Function<SendMessageBatchRequest, A> function) {
+
+        return validateAndSendMessage(sqsMessages, () -> {
             final Map<String, MessageAttributeValue> attributeValueMap = getSqsMessageAttributes(constructFinalMessageAttributeMap(transactionId, messageType, attMap));
             final String queueUrl = getQueueUrl(queueName);
             final SendMessageBatchRequest request = SendMessageBatchRequest.builder().entries(
@@ -113,7 +254,14 @@ public class SqsMessageClientImpl implements SqsMessageClient {
                 log.debug(MessageFormat.format("Sending messages to SQS[{0}] : {1}", queueUrl, sqsMessages));
             }
 
-            return sqsAsyncClient.sendMessageBatch(request);
+            return function.apply(request);
+        });
+    }
+
+    private <T, A> A validateAndSendMessage(final List<T> sqsMessages, final Supplier<A> supplier) {
+
+        if (!CollectionUtils.isEmpty(sqsMessages) && sqsMessages.size() <= 10) {
+            return supplier.get();
         } else {
             log.error(CollectionUtils.isEmpty(sqsMessages) ? "At least one message needs to be sent" : "Maximum number of messages supported is 10");
             throw new IllegalArgumentException(CollectionUtils.isEmpty(sqsMessages) ?
@@ -121,13 +269,12 @@ public class SqsMessageClientImpl implements SqsMessageClient {
         }
     }
 
-    @Override
-    public <T> CompletableFuture<SendMessageBatchResponse> sendMessage(final List<SqsMessage<T>> sqsMessages,
-                                                                       final String queueName,
-                                                                       final Integer delayInSeconds,
-                                                                       final Map<String, String> attMap) {
+    private <T, A> A sendMessage(final List<SqsMessage<T>> sqsMessages,
+                                 final String queueName,
+                                 final Integer delayInSeconds,
+                                 final Map<String, String> attMap, Function<SendMessageBatchRequest, A> function) {
 
-        if (!CollectionUtils.isEmpty(sqsMessages) && sqsMessages.size() <= MAX_NUMBER_OF_MESSAGES) {
+        return validateAndSendMessage(sqsMessages, () -> {
             final Map<String, MessageAttributeValue> attributeValueMap = getSqsMessageAttributes(constructFinalMessageAttributeMap(sqsMessages.get(0), attMap));
             final String queueUrl = getQueueUrl(queueName);
             final Set<String> uniqueTransactionIds = sqsMessages.stream()
@@ -136,13 +283,13 @@ public class SqsMessageClientImpl implements SqsMessageClient {
                     .collect(Collectors.toSet());
             final boolean areTransactionIdsUnique = !CollectionUtils.isEmpty(uniqueTransactionIds) && (uniqueTransactionIds.size() == sqsMessages.size());
             final SendMessageBatchRequest request = SendMessageBatchRequest.builder().entries(
-                    sqsMessages.stream().map(sqsMessage -> SendMessageBatchRequestEntry
-                            .builder()
-                            .id(areTransactionIdsUnique ? sqsMessage.getTransactionId() : UUID.randomUUID().toString())
-                            .messageBody(Utils.constructJson(sqsMessage))
-                            .delaySeconds(delayInSeconds)
-                            .messageAttributes(getSqsMessageAttributeValues(sqsMessage, attributeValueMap))
-                            .build()).collect(Collectors.toList()))
+                            sqsMessages.stream().map(sqsMessage -> SendMessageBatchRequestEntry
+                                    .builder()
+                                    .id(areTransactionIdsUnique ? sqsMessage.getTransactionId() : UUID.randomUUID().toString())
+                                    .messageBody(Utils.constructJson(sqsMessage))
+                                    .delaySeconds(delayInSeconds)
+                                    .messageAttributes(getSqsMessageAttributeValues(sqsMessage, attributeValueMap))
+                                    .build()).collect(Collectors.toList()))
                     .queueUrl(queueUrl)
                     .build();
 
@@ -150,22 +297,11 @@ public class SqsMessageClientImpl implements SqsMessageClient {
                 log.debug(MessageFormat.format("Sending messages to SQS[{0}] : {1}", queueUrl, sqsMessages));
             }
 
-            return sqsAsyncClient.sendMessageBatch(request);
-        } else {
-            log.error(CollectionUtils.isEmpty(sqsMessages) ? "At least one message needs to be sent" : "Maximum number of messages supported is 10");
-            throw new IllegalArgumentException(CollectionUtils.isEmpty(sqsMessages) ?
-                    "At least one message needs to be sent" : "Maximum number of messages supported is 10");
-        }
+            return function.apply(request);
+        });
     }
 
-    @Override
-    public String getQueueUrl(final String queueName) {
-        return queueUrlMap.computeIfAbsent(queueName, s -> queueUrl(queueName));
-    }
-
-    @Override
-    public CompletableFuture<DeleteMessageResponse> deleteMessage(final String queueUrl,
-                                                                  final String receiptHandle) {
+    private <A> A deleteMessage(final String queueUrl, final String receiptHandle, final Function<DeleteMessageRequest, A> function) {
 
         final DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
                 .queueUrl(queueUrl)
@@ -175,13 +311,13 @@ public class SqsMessageClientImpl implements SqsMessageClient {
         if (log.isDebugEnabled()) {
             log.debug(MessageFormat.format("Deleting message  from Queue: {0} with receiptHandle: {1}", queueUrl, receiptHandle));
         }
-        return sqsAsyncClient.deleteMessage(deleteMessageRequest);
+        return function.apply(deleteMessageRequest);
     }
 
-    @Override
-    public CompletableFuture<ChangeMessageVisibilityResponse> changeVisibility(final String queueUrl,
-                                                                               final String receiptHandle,
-                                                                               final Integer visibilityTimeout) {
+    private <A> A changeVisibility(final String queueUrl,
+                                   final String receiptHandle,
+                                   final Integer visibilityTimeout,
+                                   final Function<ChangeMessageVisibilityRequest, A> function) {
 
         final ChangeMessageVisibilityRequest request = ChangeMessageVisibilityRequest.builder()
                 .queueUrl(queueUrl)
@@ -193,7 +329,7 @@ public class SqsMessageClientImpl implements SqsMessageClient {
             log.debug(MessageFormat.format("Changing visibility of [{0}] from queue: {1}", receiptHandle, queueUrl));
         }
 
-        return sqsAsyncClient.changeMessageVisibility(request);
+        return function.apply(request);
     }
 
     private Map<String, MessageAttributeValue> getSqsMessageAttributes(final Map<String, String> attMap) {

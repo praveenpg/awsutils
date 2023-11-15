@@ -13,12 +13,17 @@ import org.springframework.core.env.Environment;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
 import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.SnsClientBuilder;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.SqsClientBuilder;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -74,10 +79,37 @@ public class SqsConfig {
         return builder;
     }
 
+    @Bean("sqsSyncClientBuilder")
+    @ConditionalOnBean(SdkHttpClient.class)
+    public SqsClientBuilder sqsSyncClientBuilder_1(final SdkHttpClient sdkHttpClient, final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
+        final var builder = SqsClient
+                .builder()
+                .region(Region.of(sqsProperties.getRegion()))
+                .httpClient(sdkHttpClient);
+
+        if(sqsProperties.isLocalAwsMode() && !StringUtils.isEmpty(sqsProperties.getLocalAwsEndpoint())) {
+            return builder.endpointOverride(new URI(sqsProperties.getLocalAwsEndpoint()));
+        }
+
+        return builder;
+    }
+
     @Bean("sqsAsyncClientBuilder")
     @ConditionalOnMissingBean(SdkAsyncHttpClient.class)
     public SqsAsyncClientBuilder sqsAsyncClientBuilder_2(final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
         final var builder = SqsAsyncClient.builder().region(Region.of(sqsProperties.getRegion()));
+
+        if(sqsProperties.isLocalAwsMode() && !StringUtils.isEmpty(sqsProperties.getLocalAwsEndpoint())) {
+            return builder.endpointOverride(new URI(sqsProperties.getLocalAwsEndpoint()));
+        }
+
+        return builder;
+    }
+
+    @Bean("sqsSyncClientBuilder")
+    @ConditionalOnMissingBean(SdkHttpClient.class)
+    public SqsClientBuilder sqsClientBuilder_2(final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
+        final var builder = SqsClient.builder().region(Region.of(sqsProperties.getRegion()));
 
         if(sqsProperties.isLocalAwsMode() && !StringUtils.isEmpty(sqsProperties.getLocalAwsEndpoint())) {
             return builder.endpointOverride(new URI(sqsProperties.getLocalAwsEndpoint()));
@@ -96,9 +128,26 @@ public class SqsConfig {
     }
 
     @Bean
+    @ConditionalOnBean(name = "staticCredentialsProvider")
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"region"})
+    public SnsClient snsSyncClient(final SnsClientBuilder snsClientBuilder,
+                                    final AwsCredentialsProvider staticCredentialsProvider) {
+
+        return snsClientBuilder.credentialsProvider(staticCredentialsProvider).build();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(name = "staticCredentialsProvider")
     @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"region"})
     public SnsAsyncClient snsAsyncClientEnv(final SnsAsyncClientBuilder snsAsyncClientBuilder) {
+
+        return snsAsyncClientBuilder.build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "staticCredentialsProvider")
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"region"})
+    public SnsClient snsSyncClientEnv(final SnsClientBuilder snsAsyncClientBuilder) {
 
         return snsAsyncClientBuilder.build();
     }
@@ -113,11 +162,28 @@ public class SqsConfig {
     }
 
     @Bean
+    @ConditionalOnBean(name = "staticCredentialsProvider")
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"region"})
+    public SqsClient sqsSyncClient(final AwsCredentialsProvider staticCredentialsProvider,
+                                         final SqsClientBuilder sqsClientBuilder) {
+
+        return sqsClientBuilder.credentialsProvider(staticCredentialsProvider).build();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(name = "staticCredentialsProvider")
     @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"region"})
     public SqsAsyncClient sqsAsyncClientEnv(final SqsAsyncClientBuilder sqsAsyncClientBuilder) {
 
         return sqsAsyncClientBuilder.build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "staticCredentialsProvider")
+    @ConditionalOnProperty(prefix = CONFIG_PREFIX, value = {"region"})
+    public SqsClient sqsSyncClientEnv(final SqsClientBuilder sqsClientBuilder) {
+
+        return sqsClientBuilder.build();
     }
 
     @Bean(name = "messagePollingIntervalPropertyPropertyFunc")
