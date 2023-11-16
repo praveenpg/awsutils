@@ -132,7 +132,6 @@ public class SqsMessageListenerInitializer {
             final Function<Integer, SqsMessageListener> sqsMessageListenerFunc = c -> SqsMessageListener
                     .builder()
                     .sqsSyncClient(sqsSyncClient)
-                    .sqsAsyncClient(sqsAsyncClient)
                     .queueName(sqsMessageListenerProperties.getQueueName())
                     .sqsMessageClient(sqsMessageClient)
                     .messageHandlerFactory(messageHandlerFactory)

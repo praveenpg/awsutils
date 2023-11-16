@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
@@ -45,7 +44,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     @SuppressWarnings("FieldCanBeLocal")
     private final Environment environment;
     private String queueUrl;
-    private final SqsAsyncClient sqsAsyncClient;
 
     private final SqsClient sqsSyncClient;
     private final MessageHandlerFactory messageHandlerFactory;
@@ -73,10 +71,10 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     private static final Thread SHUTDOWN_HOOK = new Thread();
 
 
-    private SqsMessageListenerImpl(final SqsAsyncClient sqsAsyncClient,
-                                   final String queueName,
+    private SqsMessageListenerImpl(final String queueName,
                                    final String queueUrl,
-                                   SqsClient sqsSyncClient, final SqsMessageClient sqsMessageClient,
+                                   final SqsClient sqsSyncClient,
+                                   final SqsMessageClient sqsMessageClient,
                                    final MessageHandlerFactory messageHandlerFactory,
                                    final ExecutorService executorService,
                                    final String rateLimiterName,
@@ -94,7 +92,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         this.rateLimiterName = rateLimiterName;
         this.messageHandlerRateLimiterName = messageHandlerRateLimiterName;
         this.waitTimeInSeconds = waitTimeInSeconds;
-        this.sqsAsyncClient = sqsAsyncClient;
         this.messageHandlerFactory = messageHandlerFactory;
         this.propertyReaderFunction = propertyReaderFunction;
         this.listenerName = listenerName;
@@ -382,7 +379,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
 
     private static class SqsMessageListenerBuilder implements SqsMessageListener.Builder {
         private String queueName;
-        private SqsAsyncClient sqsAsyncClient;
         private MessageHandlerFactory messageHandlerFactory;
         private SqsMessageClient sqsMessageClient;
         private ExecutorService executorService;
@@ -408,12 +404,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         @Override
         public Builder queueUrl(final String queueUrl) {
             this.queueUrl = queueUrl;
-            return this;
-        }
-
-        @Override
-        public Builder sqsAsyncClient(final SqsAsyncClient sqsAsyncClient) {
-            this.sqsAsyncClient = sqsAsyncClient;
             return this;
         }
 
@@ -505,7 +495,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
 
         @Override
         public SqsMessageListener build() {
-            final SqsMessageListenerImpl sqsMessageListener = new SqsMessageListenerImpl(sqsAsyncClient,
+            final SqsMessageListenerImpl sqsMessageListener = new SqsMessageListenerImpl(
                     queueName,
                     queueUrl, sqsSyncClient, sqsMessageClient,
                     messageHandlerFactory,

@@ -5,8 +5,8 @@ import org.awsutils.common.ratelimiter.RateLimiter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public final class MethodLevelSqsMessageHandler<T> extends AbstractSqsMessageHandler<T> {
     private final Method method;
     private final Object handlerBean;
@@ -20,19 +20,15 @@ public final class MethodLevelSqsMessageHandler<T> extends AbstractSqsMessageHan
 
 
     @Override
-    public CompletableFuture<?> execute(T message) {
+    public <X> X execute(T message) {
         try {
             final var returnVal = method.invoke(handlerBean, message);
 
-            if (returnVal instanceof CompletableFuture<?>) {
-                return (CompletableFuture<?>) returnVal;
-            } else {
-                return CompletableFuture.completedFuture(returnVal);
-            }
+            return (X) returnVal;
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
-            throw (e.getCause() instanceof RuntimeException ex ? ex: new RuntimeException(e));
+            throw (e.getCause() instanceof RuntimeException ex ? ex: new RuntimeException(e.getCause()));
         }
     }
 
@@ -49,7 +45,6 @@ public final class MethodLevelSqsMessageHandler<T> extends AbstractSqsMessageHan
         super.initialize(sqsMessage, transactionId, messageTypeClass, method, receiptHandle, queueUrl, retryNumber, messageAttributes, rateLimiter);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     Class<T> getParameterType() {
         return (Class<T>) method.getParameterTypes()[1];

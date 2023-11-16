@@ -22,8 +22,6 @@ public interface SqsMessageListener {
 
         Builder queueUrl(String queueUrl);
 
-        Builder sqsAsyncClient(SqsAsyncClient sqsAsyncClient);
-
         Builder messageHandlerFactory(MessageHandlerFactory messageHandlerFactory);
 
         Builder sqsMessageClient(SqsMessageClient sqsMessageClient);

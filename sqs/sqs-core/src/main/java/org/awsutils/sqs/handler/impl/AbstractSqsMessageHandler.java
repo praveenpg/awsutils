@@ -18,6 +18,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -90,7 +91,7 @@ public abstract class AbstractSqsMessageHandler<T> implements SqsMessageHandler<
         }
 
         if (sqsMessageClient != null) {
-            sqsMessageClient.deleteMessage(queueUrl, receiptHandle);
+            sqsMessageClient.deleteMessageSync(queueUrl, receiptHandle);
         }
     }
 
@@ -98,6 +99,7 @@ public abstract class AbstractSqsMessageHandler<T> implements SqsMessageHandler<
         final Runnable processFunc = () -> {
             final T message = getMessage();
             try {
+                final Object executionResult;
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("In handle method of " + this);
                 }
@@ -106,12 +108,17 @@ public abstract class AbstractSqsMessageHandler<T> implements SqsMessageHandler<
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Calling execute...");
                 }
-                execute(message)
-                        .whenComplete((result, e) -> handleSqsMessageProcessResult(result, e, message))
-                        .exceptionallyAsync(e -> {
-                            handleException(message, e);
-                            return null;
-                        });
+                executionResult = execute(message);
+
+                if(executionResult instanceof CompletableFuture<?> future) {
+                    future.whenComplete((result, e) -> handleSqsMessageProcessResult(result, e, message))
+                            .exceptionallyAsync(e -> {
+                                handleException(message, e);
+                                return null;
+                            });
+                } else {
+                    handleSqsMessageProcessResult(executionResult, null, message);
+                }
             } catch (final Exception e) {
                 LOGGER.error("Exception while handling Sqs Message: [" + this.getClass() + "]: " + e, e);
                 handleException(message, e);
@@ -140,7 +147,7 @@ public abstract class AbstractSqsMessageHandler<T> implements SqsMessageHandler<
         final SqsMessageClient sqsMessageClient = injector.sqsMessageClient();
 
         if (sqsMessageClient != null) {
-            sqsMessageClient.changeVisibility(queueUrl, receiptHandle, visibilityTimeout);
+            sqsMessageClient.changeVisibilitySync(queueUrl, receiptHandle, visibilityTimeout);
         }
     }
 
