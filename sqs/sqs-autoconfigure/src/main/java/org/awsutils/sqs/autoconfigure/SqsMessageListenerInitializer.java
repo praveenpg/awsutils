@@ -3,21 +3,20 @@ package org.awsutils.sqs.autoconfigure;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import org.awsutils.sqs.client.SqsMessageClient;
-import org.awsutils.sqs.config.WorkerNodeCheckFunc;
-import org.awsutils.sqs.handler.MessageHandlerFactory;
-import org.awsutils.sqs.listener.SqsMessageListener;
-import org.awsutils.common.util.LimitedQueue;
-import org.awsutils.common.util.Utils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.validation.ValidationException;
 import jakarta.validation.constraints.NotNull;
 import org.apache.commons.lang3.StringUtils;
+import org.awsutils.common.util.LimitedQueue;
+import org.awsutils.common.util.Utils;
+import org.awsutils.sqs.client.SyncSqsMessageClient;
+import org.awsutils.sqs.config.WorkerNodeCheckFunc;
+import org.awsutils.sqs.handler.MessageHandlerFactory;
+import org.awsutils.sqs.listener.SqsMessageListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -49,7 +48,7 @@ import java.util.stream.IntStream;
 @Configuration
 @ConditionalOnBean(value = {
         TaskScheduler.class,
-        SqsMessageClient.class,
+        SyncSqsMessageClient.class,
         MessageHandlerFactory.class,
         SqsAsyncClient.class
 })
@@ -60,8 +59,8 @@ public class SqsMessageListenerInitializer {
     private final ApplicationContext applicationContext;
     private final SqsConfig.SqsPropertyFunc1<String, Integer> propertyFunc;
     private final MessageHandlerFactory messageHandlerFactory;
-    private final SqsMessageClient sqsMessageClient;
-    private final SqsAsyncClient sqsAsyncClient;
+
+    private final SyncSqsMessageClient syncSqsMessageClient;
 
     private final SqsClient sqsSyncClient;
     private final SqsListenerScheduleConfig schedulingConfigurer;
@@ -83,9 +82,9 @@ public class SqsMessageListenerInitializer {
                                          final ApplicationContext applicationContext,
                                          final SqsConfig.SqsPropertyFunc1<String, Integer> propertyFunc,
                                          final MessageHandlerFactory messageHandlerFactory,
-                                         @Qualifier("sqsMessageClient") final SqsMessageClient sqsMessageClient,
-                                         final SqsAsyncClient sqsAsyncClient,
-                                         SqsClient sqsSyncClient, final SqsListenerScheduleConfig schedulingConfigurer,
+                                         final SyncSqsMessageClient syncSqsMessageClient,
+                                         final SqsClient sqsSyncClient,
+                                         final SqsListenerScheduleConfig schedulingConfigurer,
                                          final Environment environment) {
 
         this.sqsMessageListenerListProperties = sqsMessageListenerListProperties;
@@ -93,8 +92,7 @@ public class SqsMessageListenerInitializer {
         this.applicationContext = applicationContext;
         this.propertyFunc = propertyFunc;
         this.messageHandlerFactory = messageHandlerFactory;
-        this.sqsMessageClient = sqsMessageClient;
-        this.sqsAsyncClient = sqsAsyncClient;
+        this.syncSqsMessageClient = syncSqsMessageClient;
         this.sqsSyncClient = sqsSyncClient;
         this.schedulingConfigurer = schedulingConfigurer;
         this.environment = environment;
@@ -133,13 +131,13 @@ public class SqsMessageListenerInitializer {
                     .builder()
                     .sqsSyncClient(sqsSyncClient)
                     .queueName(sqsMessageListenerProperties.getQueueName())
-                    .sqsMessageClient(sqsMessageClient)
                     .messageHandlerFactory(messageHandlerFactory)
                     .executorService(sqsCommonProperties.isUseCommonThreadPool() ? commonExecutorService.executorService() : createExecutorService(sqsMessageListenerProperties.getThreadPoolSize()))
                     .rateLimiterName(!StringUtils.isEmpty(rateLimiterName) ? rateLimiterName : null)
                     .maximumNumberOfMessagesKey(sqsMessageListenerProperties.getMaximumNumberOfMessagesKey())
                     .semaphore(new Semaphore(1))
                     .propertyReaderFunction(propertyFunc)
+                    .syncSqsMessageClient(syncSqsMessageClient)
                     .workerNodeCheck(finalWorkerNodeCheckFunc)
                     .listenerName(!StringUtils.isEmpty(listenerName) ? String.format("%s_%d", listenerName, c) : String.format("%s_%d", listenerKey, c))
                     .messageHandlerRateLimiter(!StringUtils.isEmpty(messageHandlerRateLimiterName) ? messageHandlerRateLimiterName : null)

@@ -9,7 +9,7 @@ import org.awsutils.common.ratelimiter.RateLimiterFactory;
 import org.awsutils.common.util.ApplicationContextUtils;
 import org.awsutils.common.util.Utils;
 import org.awsutils.sqs.client.MessageConstants;
-import org.awsutils.sqs.client.SqsMessageClient;
+import org.awsutils.sqs.client.SyncSqsMessageClient;
 import org.awsutils.sqs.config.WorkerNodeCheckFunc;
 import org.awsutils.sqs.handler.MessageHandlerFactory;
 import org.awsutils.sqs.handler.SqsMessageHandler;
@@ -47,7 +47,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
 
     private final SqsClient sqsSyncClient;
     private final MessageHandlerFactory messageHandlerFactory;
-    private final SqsMessageClient sqsMessageClient;
+
+    private final SyncSqsMessageClient syncSqsMessageClient;
     private final String rateLimiterName;
     private final ExecutorService executorService;
     private final String maximumNumberOfMessagesKey;
@@ -74,8 +75,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     private SqsMessageListenerImpl(final String queueName,
                                    final String queueUrl,
                                    final SqsClient sqsSyncClient,
-                                   final SqsMessageClient sqsMessageClient,
                                    final MessageHandlerFactory messageHandlerFactory,
+                                   final SyncSqsMessageClient syncSqsMessageClient,
                                    final ExecutorService executorService,
                                    final String rateLimiterName,
                                    final String maximumNumberOfMessagesKey,
@@ -88,6 +89,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                                    final Integer waitTimeInSeconds) {
 
         this.sqsSyncClient = sqsSyncClient;
+        this.syncSqsMessageClient = syncSqsMessageClient;
 
         this.rateLimiterName = rateLimiterName;
         this.messageHandlerRateLimiterName = messageHandlerRateLimiterName;
@@ -95,7 +97,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         this.messageHandlerFactory = messageHandlerFactory;
         this.propertyReaderFunction = propertyReaderFunction;
         this.listenerName = listenerName;
-        this.sqsMessageClient = sqsMessageClient;
         this.executorService = executorService;
         this.maximumNumberOfMessagesKey = maximumNumberOfMessagesKey;
         this.workerNodeCheck = workerNodeCheck == null ? () -> true : workerNodeCheck;
@@ -106,13 +107,13 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         this.queueName = queueName;
         this.queueUrl = queueUrl;
         this.queueUrlFunc = StringUtils.hasLength(queueUrl) ? qName -> this.queueUrl : qName
-                -> getQueueUrl(sqsMessageClient, qName);
+                -> getQueueUrl(syncSqsMessageClient, qName);
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("Creating SqsMessageListener: {}, Queue: {}", listenerName, queueName);
         }
     }
 
-    private String getQueueUrl(final SqsMessageClient sqsMessageClient, final String queueName) {
+    private String getQueueUrl(final SyncSqsMessageClient sqsMessageClient, final String queueName) {
         if (!StringUtils.hasLength(this.queueUrl)) {
             synchronized (this) {
                 if (!StringUtils.hasLength(this.queueUrl)) {
@@ -226,8 +227,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     @SuppressWarnings("FunctionalExpressionCanBeFolded")
     private void processSqsMessage(final Message message) {
         final long startTime = System.currentTimeMillis();
-        final ChangeMessageVisibilityResponse changeVisibilityResp = sqsMessageClient
-                .changeVisibilitySync(queueUrlFunc.apply(queueName), message.receiptHandle(),
+        final ChangeMessageVisibilityResponse changeVisibilityResp = syncSqsMessageClient
+                .changeVisibility(queueUrlFunc.apply(queueName), message.receiptHandle(),
                         (int) CHANGE_VISIBILITY_PERIOD_IN_SECONDS);
         final Runnable action0 = () -> {
             if (LOGGER.isDebugEnabled()) {
@@ -307,7 +308,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         if ("NO_HANDLER_FOR_MESSAGE_TYPE".equalsIgnoreCase(e.getErrorType()) || "INVALID_JSON"
                 .equalsIgnoreCase(e.getErrorType())) {
             LOGGER.error(MessageFormat.format("Exception in listener[{0}]: {1}", listenerName, e.getMessage()), e);
-            sqsMessageClient.deleteMessageSync(queueUrlFunc.apply(queueName), message.receiptHandle());
+            syncSqsMessageClient.deleteMessage(queueUrlFunc.apply(queueName), message.receiptHandle());
         } else {
             LOGGER.error(MessageFormat.format("Exception in listener[{0}]: {1}", listenerName, e.getMessage()), e);
         }
@@ -342,7 +343,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
             taskInput = Utils.constructFromJson(TaskInput.class, snsMessage);
 
             if (taskInput.getInput() == null) {
-                sqsMessageClient.deleteMessageSync(queueName, receiptHandle);
+                syncSqsMessageClient.deleteMessage(queueName, receiptHandle);
 
                 throw new UtilsException("EMPTY_MESSAGE_BODY", "Empty sqs message body");
             }
@@ -380,7 +381,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     private static class SqsMessageListenerBuilder implements SqsMessageListener.Builder {
         private String queueName;
         private MessageHandlerFactory messageHandlerFactory;
-        private SqsMessageClient sqsMessageClient;
         private ExecutorService executorService;
         private String maximumNumberOfMessagesKey;
         private Function<String, Integer> propertyReaderFunction;
@@ -394,6 +394,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         private String queueUrl;
 
         private SqsClient sqsSyncClient;
+
+        private SyncSqsMessageClient syncSqsMessageClient;
 
         @Override
         public Builder queueName(final String queueName) {
@@ -410,12 +412,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         @Override
         public Builder messageHandlerFactory(final MessageHandlerFactory messageHandlerFactory) {
             this.messageHandlerFactory = messageHandlerFactory;
-            return this;
-        }
-
-        @Override
-        public Builder sqsMessageClient(final SqsMessageClient sqsMessageClient) {
-            this.sqsMessageClient = sqsMessageClient;
             return this;
         }
 
@@ -494,12 +490,19 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         }
 
         @Override
+        public Builder syncSqsMessageClient(SyncSqsMessageClient syncSqsMessageClient) {
+            this.syncSqsMessageClient = syncSqsMessageClient;
+
+            return this;
+        }
+
+        @Override
         public SqsMessageListener build() {
             final SqsMessageListenerImpl sqsMessageListener = new SqsMessageListenerImpl(
                     queueName,
-                    queueUrl, sqsSyncClient, sqsMessageClient,
+                    queueUrl, sqsSyncClient,
                     messageHandlerFactory,
-                    executorService,
+                    syncSqsMessageClient, executorService,
                     rateLimiterName,
                     maximumNumberOfMessagesKey,
                     semaphore,

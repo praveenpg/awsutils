@@ -1,9 +1,8 @@
 package org.awsutils.sqs.listener;
 
-import org.awsutils.sqs.client.SqsMessageClient;
+import org.awsutils.sqs.client.SyncSqsMessageClient;
 import org.awsutils.sqs.config.WorkerNodeCheckFunc;
 import org.awsutils.sqs.handler.MessageHandlerFactory;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
 import java.util.concurrent.ExecutorService;
@@ -23,8 +22,6 @@ public interface SqsMessageListener {
         Builder queueUrl(String queueUrl);
 
         Builder messageHandlerFactory(MessageHandlerFactory messageHandlerFactory);
-
-        Builder sqsMessageClient(SqsMessageClient sqsMessageClient);
 
         Builder executorService(ExecutorService executorService);
 
@@ -47,6 +44,8 @@ public interface SqsMessageListener {
         Builder waitTimeInSeconds(Integer waitTimeInSeconds);
 
         Builder sqsSyncClient(SqsClient sqsSyncClient);
+
+        Builder syncSqsMessageClient(SyncSqsMessageClient syncSqsMessageClient);
 
         SqsMessageListener build();
     }

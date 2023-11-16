@@ -1,10 +1,7 @@
 package org.awsutils.sqs.autoconfigure;
 
 import io.vavr.Tuple2;
-import org.awsutils.sqs.client.SnsService;
-import org.awsutils.sqs.client.SnsServiceImpl;
-import org.awsutils.sqs.client.SqsMessageClient;
-import org.awsutils.sqs.client.SqsMessageClientImpl;
+import org.awsutils.sqs.client.*;
 import org.awsutils.sqs.handler.MessageHandlerFactory;
 import org.awsutils.sqs.handler.MessageHandlerFactoryImpl;
 import org.awsutils.sqs.handler.impl.AbstractSqsMessageHandler;
@@ -62,9 +59,19 @@ public class MessageHandlerFactoryConfig {
         return new MessageHandlerFactoryImpl(handlerMapping, methodHandlerMapping, applicationContext);
     }
 
+//    @Bean
+//    public SqsMessageClient sqsMessageClient() {
+//        return new SqsMessageClientImpl(sqsAsyncClient, sqsSyncClient);
+//    }
+
     @Bean
-    public SqsMessageClient sqsMessageClient() {
-        return new SqsMessageClientImpl(sqsAsyncClient, sqsSyncClient);
+    public AsyncSqsMessageClient asyncSqsMessageClientV2() {
+        return new AsyncSqsMessageClientImpl(sqsAsyncClient);
+    }
+
+    @Bean
+    public SyncSqsMessageClient syncSqsMessageClient() {
+        return new SyncSqsMessageClientImpl(sqsSyncClient);
     }
 
     @Bean

@@ -1,7 +1,7 @@
 package org.awsutils.sqs.aspects;
 
-import org.awsutils.sqs.client.SqsMessageClient;
+import org.awsutils.sqs.client.SyncSqsMessageClient;
 
 public interface SqsMessageSenderInjector {
-    SqsMessageClient sqsMessageClient();
+    SyncSqsMessageClient sqsMessageClient();
 }

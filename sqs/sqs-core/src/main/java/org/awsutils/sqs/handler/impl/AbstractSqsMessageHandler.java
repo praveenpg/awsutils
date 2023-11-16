@@ -5,7 +5,7 @@ import org.awsutils.common.ratelimiter.RateLimiter;
 import org.awsutils.common.util.Utils;
 import org.awsutils.sqs.annotations.MessageHandler;
 import org.awsutils.sqs.aspects.SqsMessageSenderInjector;
-import org.awsutils.sqs.client.SqsMessageClient;
+import org.awsutils.sqs.client.SyncSqsMessageClient;
 import org.awsutils.sqs.handler.SqsMessageHandler;
 import org.awsutils.sqs.message.SqsMessage;
 import org.slf4j.Logger;
@@ -84,14 +84,14 @@ public abstract class AbstractSqsMessageHandler<T> implements SqsMessageHandler<
 
     void deleteMessage() {
         final SqsMessageSenderInjector injector = ((SqsMessageSenderInjector) this);
-        final SqsMessageClient sqsMessageClient = injector.sqsMessageClient();
+        final SyncSqsMessageClient sqsMessageClient = injector.sqsMessageClient();
 
         if(LOGGER.isDebugEnabled()) {
             LOGGER.debug("deleting message from SQS queue: {}, Message: {}", receiptHandle, message);
         }
 
         if (sqsMessageClient != null) {
-            sqsMessageClient.deleteMessageSync(queueUrl, receiptHandle);
+            sqsMessageClient.deleteMessage(queueUrl, receiptHandle);
         }
     }
 
@@ -144,10 +144,10 @@ public abstract class AbstractSqsMessageHandler<T> implements SqsMessageHandler<
 
     private void changeVisibility(final int visibilityTimeout) {
         final SqsMessageSenderInjector injector = ((SqsMessageSenderInjector) this);
-        final SqsMessageClient sqsMessageClient = injector.sqsMessageClient();
+        final SyncSqsMessageClient sqsMessageClient = injector.sqsMessageClient();
 
         if (sqsMessageClient != null) {
-            sqsMessageClient.changeVisibilitySync(queueUrl, receiptHandle, visibilityTimeout);
+            sqsMessageClient.changeVisibility(queueUrl, receiptHandle, visibilityTimeout);
         }
     }
 
