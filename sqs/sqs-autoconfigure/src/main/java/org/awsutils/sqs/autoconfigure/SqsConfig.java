@@ -67,8 +67,8 @@ public class SqsConfig {
     //----------------------------------------------------------------------------------------------------
 
     @Bean("snsSyncClientBuilder")
-    @ConditionalOnBean(SdkAsyncHttpClient.class)
-    public SnsClientBuilder snsAsyncClientBuilder_1(final SdkHttpClient selectedSdkAsyncHttpClient, final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
+    @ConditionalOnBean(SdkHttpClient.class)
+    public SnsClientBuilder snsSyncClientBuilder_1(final SdkHttpClient selectedSdkAsyncHttpClient, final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
         final var builder = SnsClient.builder().region(Region.of(sqsProperties.getRegion()))
                 .httpClient(selectedSdkAsyncHttpClient);
 
@@ -80,7 +80,7 @@ public class SqsConfig {
     }
 
     @Bean("snsSyncClientBuilder")
-    @ConditionalOnMissingBean(SdkAsyncHttpClient.class)
+    @ConditionalOnMissingBean(SdkHttpClient.class)
     public SnsClientBuilder snsSyncClientBuilder_2(final AwsEnvironmentProperties sqsProperties) throws URISyntaxException {
         final var builder = SnsClient.builder().region(Region.of(sqsProperties.getRegion()));
 
