@@ -4,6 +4,7 @@ import org.awsutils.sqs.client.SqsMessageClient;
 import org.awsutils.sqs.config.WorkerNodeCheckFunc;
 import org.awsutils.sqs.handler.MessageHandlerFactory;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
@@ -46,6 +47,8 @@ public interface SqsMessageListener {
         Builder statusProperty(String enabled);
 
         Builder waitTimeInSeconds(Integer waitTimeInSeconds);
+
+        Builder sqsSyncClient(SqsClient sqsSyncClient);
 
         SqsMessageListener build();
     }

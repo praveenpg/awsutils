@@ -29,6 +29,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.util.CollectionUtils;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -61,6 +62,8 @@ public class SqsMessageListenerInitializer {
     private final MessageHandlerFactory messageHandlerFactory;
     private final SqsMessageClient sqsMessageClient;
     private final SqsAsyncClient sqsAsyncClient;
+
+    private final SqsClient sqsSyncClient;
     private final SqsListenerScheduleConfig schedulingConfigurer;
     private final Environment environment;
     private static final Integer DEFAULT_WAIT_TIME_IN_SECONDS = 10;
@@ -82,7 +85,7 @@ public class SqsMessageListenerInitializer {
                                          final MessageHandlerFactory messageHandlerFactory,
                                          @Qualifier("sqsMessageClient") final SqsMessageClient sqsMessageClient,
                                          final SqsAsyncClient sqsAsyncClient,
-                                         final SqsListenerScheduleConfig schedulingConfigurer,
+                                         SqsClient sqsSyncClient, final SqsListenerScheduleConfig schedulingConfigurer,
                                          final Environment environment) {
 
         this.sqsMessageListenerListProperties = sqsMessageListenerListProperties;
@@ -92,6 +95,7 @@ public class SqsMessageListenerInitializer {
         this.messageHandlerFactory = messageHandlerFactory;
         this.sqsMessageClient = sqsMessageClient;
         this.sqsAsyncClient = sqsAsyncClient;
+        this.sqsSyncClient = sqsSyncClient;
         this.schedulingConfigurer = schedulingConfigurer;
         this.environment = environment;
     }
@@ -127,6 +131,7 @@ public class SqsMessageListenerInitializer {
                     () -> (StringUtils.isEmpty(listenerEnabledProperty) || isSqsListenerEnabled(listenerEnabledProperty)) && workerNodeCheckFunc.check();
             final Function<Integer, SqsMessageListener> sqsMessageListenerFunc = c -> SqsMessageListener
                     .builder()
+                    .sqsSyncClient(sqsSyncClient)
                     .sqsAsyncClient(sqsAsyncClient)
                     .queueName(sqsMessageListenerProperties.getQueueName())
                     .sqsMessageClient(sqsMessageClient)
