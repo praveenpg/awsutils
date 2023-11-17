@@ -62,18 +62,14 @@ public class MessageHandlerFactoryConfig {
 
     @Bean
     public AsyncSqsMessageClient asyncSqsMessageClientV2() {
-        final var client = new AsyncSqsMessageClientImpl(sqsAsyncClient);
 
-        return (AsyncSqsMessageClient) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{AsyncSqsMessageClient.class},
-                (proxy, method, args) -> method.invoke(client, args));
+        return new AsyncSqsMessageClientImpl(sqsAsyncClient);
     }
 
     @Bean
     public SyncSqsMessageClient syncSqsMessageClient() {
-        final var client = new SyncSqsMessageClientImpl(sqsSyncClient);
 
-        return (SyncSqsMessageClient) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{SyncSqsMessageClient.class},
-                (proxy, method, args) -> method.invoke(client, args));
+        return new SyncSqsMessageClientImpl(sqsSyncClient);
     }
 
     @Bean

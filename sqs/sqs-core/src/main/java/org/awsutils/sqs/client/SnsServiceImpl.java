@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-public class SnsServiceImpl implements SnsService {
+public final class SnsServiceImpl implements SnsService {
     private final SnsAsyncClient snsAsyncClient;
     private static final String STRING_DATA_TYPE = "String";
 

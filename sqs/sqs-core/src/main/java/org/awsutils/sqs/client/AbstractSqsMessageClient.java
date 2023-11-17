@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import static org.awsutils.sqs.client.MessageConstants.SQS_MESSAGE_WRAPPER_PRESENT;
 
 @Slf4j
-abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessageClient<A, B, C, D> {
+abstract sealed class AbstractSqsMessageClient<A, B, C, D> implements SqsMessageClient<A, B, C, D> permits SyncSqsMessageClientImpl, AsyncSqsMessageClientImpl {
     private final ConcurrentHashMap<String, String> queueUrlMap = new ConcurrentHashMap<>();
 
     <T> SendMessageRequest.Builder getSendMessageRequestBuilder(final T sqsMessage,

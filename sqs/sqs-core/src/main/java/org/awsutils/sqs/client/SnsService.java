@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public interface SnsService {
+public sealed interface SnsService permits SnsServiceImpl {
 
     default <T> CompletableFuture<PublishResponse> publishMessage(SnsMessage<T> snsMessage, String topicArn) {
         return publishMessage(snsMessage, topicArn, Collections.emptyMap());
