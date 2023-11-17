@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import static org.awsutils.sqs.client.MessageConstants.SQS_MESSAGE_WRAPPER_PRESENT;
 
 @Slf4j
-public abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessageClient<A, B, C, D> {
+abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessageClient<A, B, C, D> {
     private final ConcurrentHashMap<String, String> queueUrlMap = new ConcurrentHashMap<>();
 
     <T> SendMessageRequest.Builder getSendMessageRequestBuilder(final T sqsMessage,
@@ -125,7 +125,7 @@ public abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessage
         return builder.build();
     }
 
-    <T> Map<String, MessageAttributeValue> getSqsMessageAttributeValues(final String messageType,
+    Map<String, MessageAttributeValue> getSqsMessageAttributeValues(final String messageType,
                                                                         final String transactionId,
                                                                         final Map<String, MessageAttributeValue> attributeValueMap) {
 
@@ -158,7 +158,7 @@ public abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessage
         return finalMessageAttributes;
     }
 
-    <T> Map<String, String> constructFinalMessageAttributeMap(final String transactionId,
+    Map<String, String> constructFinalMessageAttributeMap(final String transactionId,
                                                               final String messageType,
                                                               final Map<String, String> messageAttMap) {
 

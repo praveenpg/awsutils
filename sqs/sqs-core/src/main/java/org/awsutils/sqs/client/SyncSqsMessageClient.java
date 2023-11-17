@@ -5,5 +5,6 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-public interface SyncSqsMessageClient extends SqsMessageClient<SendMessageResponse, SendMessageBatchResponse, DeleteMessageResponse, ChangeMessageVisibilityResponse> {
+public sealed interface SyncSqsMessageClient extends SqsMessageClient<SendMessageResponse, SendMessageBatchResponse,
+        DeleteMessageResponse, ChangeMessageVisibilityResponse> permits SyncSqsMessageClientImpl {
 }

@@ -7,8 +7,8 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.util.concurrent.CompletableFuture;
 
-public interface AsyncSqsMessageClient extends SqsMessageClient<CompletableFuture<SendMessageResponse>,
+public sealed interface AsyncSqsMessageClient extends SqsMessageClient<CompletableFuture<SendMessageResponse>,
         CompletableFuture<SendMessageBatchResponse>,
         CompletableFuture<DeleteMessageResponse>,
-        CompletableFuture<ChangeMessageVisibilityResponse>> {
+        CompletableFuture<ChangeMessageVisibilityResponse>> permits AsyncSqsMessageClientImpl {
 }

@@ -1,13 +1,13 @@
 package org.awsutils.sqs.autoconfigure;
 
 import io.vavr.Tuple2;
+import lombok.extern.slf4j.Slf4j;
+import org.awsutils.common.util.ApplicationContextUtils;
+import org.awsutils.common.util.Utils;
 import org.awsutils.sqs.client.*;
 import org.awsutils.sqs.handler.MessageHandlerFactory;
 import org.awsutils.sqs.handler.MessageHandlerFactoryImpl;
 import org.awsutils.sqs.handler.impl.AbstractSqsMessageHandler;
-import org.awsutils.common.util.ApplicationContextUtils;
-import org.awsutils.common.util.Utils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.Map;
 
 @SuppressWarnings({"SpringFacetCodeInspection", "FieldCanBeLocal", "unused", "unchecked", "rawtypes"})
@@ -59,19 +60,20 @@ public class MessageHandlerFactoryConfig {
         return new MessageHandlerFactoryImpl(handlerMapping, methodHandlerMapping, applicationContext);
     }
 
-//    @Bean
-//    public SqsMessageClient sqsMessageClient() {
-//        return new SqsMessageClientImpl(sqsAsyncClient, sqsSyncClient);
-//    }
-
     @Bean
     public AsyncSqsMessageClient asyncSqsMessageClientV2() {
-        return new AsyncSqsMessageClientImpl(sqsAsyncClient);
+        final var client = new AsyncSqsMessageClientImpl(sqsAsyncClient);
+
+        return (AsyncSqsMessageClient) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{AsyncSqsMessageClient.class},
+                (proxy, method, args) -> method.invoke(client, args));
     }
 
     @Bean
     public SyncSqsMessageClient syncSqsMessageClient() {
-        return new SyncSqsMessageClientImpl(sqsSyncClient);
+        final var client = new SyncSqsMessageClientImpl(sqsSyncClient);
+
+        return (SyncSqsMessageClient) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{SyncSqsMessageClient.class},
+                (proxy, method, args) -> method.invoke(client, args));
     }
 
     @Bean

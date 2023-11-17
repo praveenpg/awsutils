@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class SyncSqsMessageClientImpl
+public final class SyncSqsMessageClientImpl
         extends AbstractSqsMessageClient<SendMessageResponse,
                 SendMessageBatchResponse,
                 DeleteMessageResponse,

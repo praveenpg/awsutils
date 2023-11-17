@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 @Slf4j
-public class AsyncSqsMessageClientImpl extends AbstractSqsMessageClient<CompletableFuture<SendMessageResponse>,
+public final class AsyncSqsMessageClientImpl extends AbstractSqsMessageClient<CompletableFuture<SendMessageResponse>,
         CompletableFuture<SendMessageBatchResponse>,
         CompletableFuture<DeleteMessageResponse>,
         CompletableFuture<ChangeMessageVisibilityResponse>> implements AsyncSqsMessageClient {
