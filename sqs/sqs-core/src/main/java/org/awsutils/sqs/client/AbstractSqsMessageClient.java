@@ -46,6 +46,7 @@ abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessageClient<
 
         return sendMessageRequestBuilder;
     }
+
     <T> B validateAndSendMessage(final List<T> sqsMessages, final Supplier<B> supplier) {
 
         if (!CollectionUtils.isEmpty(sqsMessages) && sqsMessages.size() <= 10) {
@@ -59,9 +60,10 @@ abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessageClient<
 
 
     <T> B sendMessage(final List<SqsMessage<T>> sqsMessages,
-                         final String queueName,
-                         final Integer delayInSeconds,
-                         final Map<String, String> attMap, Function<SendMessageBatchRequest, B> function) {
+                      final String queueName,
+                      final Integer delayInSeconds,
+                      final Map<String, String> attMap,
+                      final Function<SendMessageBatchRequest, B> function) {
 
         return validateAndSendMessage(sqsMessages, () -> {
             final Map<String, MessageAttributeValue> attributeValueMap = getSqsMessageAttributes(constructFinalMessageAttributeMap(sqsMessages.get(0), attMap));
@@ -126,8 +128,8 @@ abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessageClient<
     }
 
     Map<String, MessageAttributeValue> getSqsMessageAttributeValues(final String messageType,
-                                                                        final String transactionId,
-                                                                        final Map<String, MessageAttributeValue> attributeValueMap) {
+                                                                    final String transactionId,
+                                                                    final Map<String, MessageAttributeValue> attributeValueMap) {
 
         final ImmutableMap.Builder<String, MessageAttributeValue> builder = ImmutableMap.<String, MessageAttributeValue>builder().putAll(attributeValueMap);
 
@@ -159,8 +161,8 @@ abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessageClient<
     }
 
     Map<String, String> constructFinalMessageAttributeMap(final String transactionId,
-                                                              final String messageType,
-                                                              final Map<String, String> messageAttMap) {
+                                                          final String messageType,
+                                                          final Map<String, String> messageAttMap) {
 
         final Map<String, String> finalMessageAttributes = !CollectionUtils.isEmpty(messageAttMap) ? new HashMap<>(messageAttMap) : new HashMap<>();
 
@@ -170,12 +172,12 @@ abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessageClient<
     }
 
     <T> B sendMessage(final List<T> sqsMessages,
-                         final String messageType,
-                         final String transactionId,
-                         final String queueName,
-                         final Integer delayInSeconds,
-                         final Map<String, String> attMap,
-                         final Function<SendMessageBatchRequest, B> function) {
+                      final String messageType,
+                      final String transactionId,
+                      final String queueName,
+                      final Integer delayInSeconds,
+                      final Map<String, String> attMap,
+                      final Function<SendMessageBatchRequest, B> function) {
 
         return validateAndSendMessage(sqsMessages, () -> {
             final Map<String, MessageAttributeValue> attributeValueMap = getSqsMessageAttributes(constructFinalMessageAttributeMap(transactionId, messageType, attMap));
@@ -212,10 +214,10 @@ abstract class AbstractSqsMessageClient<A, B, C, D> implements SqsMessageClient<
         return function.apply(deleteMessageRequest);
     }
 
-     D changeVisibility(final String queueUrl,
-                           final String receiptHandle,
-                           final Integer visibilityTimeout,
-                           final Function<ChangeMessageVisibilityRequest, D> function) {
+    D changeVisibility(final String queueUrl,
+                       final String receiptHandle,
+                       final Integer visibilityTimeout,
+                       final Function<ChangeMessageVisibilityRequest, D> function) {
 
         final ChangeMessageVisibilityRequest request = ChangeMessageVisibilityRequest.builder()
                 .queueUrl(queueUrl)

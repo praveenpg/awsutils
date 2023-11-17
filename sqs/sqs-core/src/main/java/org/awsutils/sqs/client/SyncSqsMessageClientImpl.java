@@ -11,17 +11,17 @@ import java.util.Map;
 @Slf4j
 public final class SyncSqsMessageClientImpl
         extends AbstractSqsMessageClient<SendMessageResponse,
-                SendMessageBatchResponse,
-                DeleteMessageResponse,
-                ChangeMessageVisibilityResponse> implements SyncSqsMessageClient {
+        SendMessageBatchResponse,
+        DeleteMessageResponse,
+        ChangeMessageVisibilityResponse> implements SyncSqsMessageClient {
     private final SqsClient sqsSyncClient;
 
-    public SyncSqsMessageClientImpl(SqsClient sqsClient) {
+    public SyncSqsMessageClientImpl(final SqsClient sqsClient) {
         this.sqsSyncClient = sqsClient;
     }
 
     @Override
-    protected String queueUrl(String queueName) {
+    protected String queueUrl(final String queueName) {
         final GetQueueUrlRequest queueUrlRequest = GetQueueUrlRequest.builder()
                 .queueName(queueName)
                 .build();
@@ -31,37 +31,60 @@ public final class SyncSqsMessageClientImpl
     }
 
     @Override
-    public <T> SendMessageResponse sendMessage(SqsMessage<T> sqsMessage, String queueName, Integer delayInSeconds, Map<String, String> messageAttMap) {
+    public <T> SendMessageResponse sendMessage(final SqsMessage<T> sqsMessage,
+                                               final String queueName,
+                                               final Integer delayInSeconds,
+                                               final Map<String, String> messageAttMap) {
+
         return handleSqsResponse(sqsMessage, queueName, delayInSeconds, sqsSyncClient.sendMessage(
                 getSendMessageRequestBuilder(sqsMessage, queueName, delayInSeconds, messageAttMap).build()));
     }
 
     @Override
-    public <T> SendMessageResponse sendMessage(T sqsMessage, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> messageAttMap) {
+    public <T> SendMessageResponse sendMessage(final T sqsMessage,
+                                               final String messageType,
+                                               final String transactionId,
+                                               final String queueName,
+                                               final Integer delayInSeconds,
+                                               final Map<String, String> messageAttMap) {
+
         return handleSqsResponse(sqsMessage, messageType, queueName, delayInSeconds, sqsSyncClient.sendMessage(
                 getSendMessageRequestBuilder(sqsMessage, messageType,
                         transactionId, queueName, delayInSeconds, messageAttMap).build()));
     }
 
     @Override
-    public <T> SendMessageBatchResponse sendMessage(List<T> sqsMessages, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> attMap) {
+    public <T> SendMessageBatchResponse sendMessage(final List<T> sqsMessages,
+                                                    final String messageType,
+                                                    final String transactionId,
+                                                    final String queueName,
+                                                    final Integer delayInSeconds,
+                                                    final Map<String, String> attMap) {
+
         return sendMessage(sqsMessages, messageType, transactionId, queueName, delayInSeconds, attMap,
                 sqsSyncClient::sendMessageBatch);
     }
 
     @Override
-    public <T> SendMessageBatchResponse sendMessage(List<SqsMessage<T>> sqsMessages, String queueName, Integer delayInSeconds, Map<String, String> attMap) {
+    public <T> SendMessageBatchResponse sendMessage(final List<SqsMessage<T>> sqsMessages,
+                                                    final String queueName,
+                                                    final Integer delayInSeconds,
+                                                    final Map<String, String> attMap) {
+
         return validateAndSendMessage(sqsMessages, () ->
                 sendMessage(sqsMessages, queueName, delayInSeconds, attMap, sqsSyncClient::sendMessageBatch));
     }
 
     @Override
-    public DeleteMessageResponse deleteMessage(String queueUrl, String receiptHandle) {
+    public DeleteMessageResponse deleteMessage(final String queueUrl,
+                                               final String receiptHandle) {
         return deleteMessage(queueUrl, receiptHandle, sqsSyncClient::deleteMessage);
     }
 
     @Override
-    public ChangeMessageVisibilityResponse changeVisibility(String queueUrl, String receiptHandle, Integer visibilityTimeout) {
+    public ChangeMessageVisibilityResponse changeVisibility(final String queueUrl,
+                                                            final String receiptHandle,
+                                                            final Integer visibilityTimeout) {
         return changeVisibility(queueUrl, receiptHandle, visibilityTimeout, sqsSyncClient::changeMessageVisibility);
     }
 }

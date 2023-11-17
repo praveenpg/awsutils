@@ -25,7 +25,7 @@ public final class AsyncSqsMessageClientImpl extends AbstractSqsMessageClient<Co
 
 
     @Override
-    protected String queueUrl(String queueName) {
+    protected String queueUrl(final String queueName) {
         try {
             final GetQueueUrlRequest queueUrlRequest = GetQueueUrlRequest.builder()
                     .queueName(queueName)
@@ -44,13 +44,23 @@ public final class AsyncSqsMessageClientImpl extends AbstractSqsMessageClient<Co
     }
 
     @Override
-    public <T> CompletableFuture<SendMessageResponse> sendMessage(SqsMessage<T> sqsMessage, String queueName, Integer delayInSeconds, Map<String, String> messageAttMap) {
+    public <T> CompletableFuture<SendMessageResponse> sendMessage(final SqsMessage<T> sqsMessage,
+                                                                  final String queueName,
+                                                                  final Integer delayInSeconds,
+                                                                  final Map<String, String> messageAttMap) {
+
         return sqsAsyncClient.sendMessage(getSendMessageRequestBuilder(sqsMessage, queueName, delayInSeconds, messageAttMap).build())
                 .thenApplyAsync(response -> handleSqsResponse(sqsMessage, queueName, delayInSeconds, response));
     }
 
     @Override
-    public <T> CompletableFuture<SendMessageResponse> sendMessage(T sqsMessage, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> messageAttMap) {
+    public <T> CompletableFuture<SendMessageResponse> sendMessage(final T sqsMessage,
+                                                                  final String messageType,
+                                                                  final String transactionId,
+                                                                  final String queueName,
+                                                                  final Integer delayInSeconds,
+                                                                  final Map<String, String> messageAttMap) {
+
         return sqsAsyncClient.sendMessage(getSendMessageRequestBuilder(sqsMessage, messageType, transactionId, queueName,
                         delayInSeconds, messageAttMap).build())
                 .thenApplyAsync(response -> handleSqsResponse(
@@ -58,24 +68,38 @@ public final class AsyncSqsMessageClientImpl extends AbstractSqsMessageClient<Co
     }
 
     @Override
-    public <T> CompletableFuture<SendMessageBatchResponse> sendMessage(List<T> sqsMessages, String messageType, String transactionId, String queueName, Integer delayInSeconds, Map<String, String> attMap) {
+    public <T> CompletableFuture<SendMessageBatchResponse> sendMessage(final List<T> sqsMessages,
+                                                                       final String messageType,
+                                                                       final String transactionId,
+                                                                       final String queueName,
+                                                                       final Integer delayInSeconds,
+                                                                       final Map<String, String> attMap) {
+
         return sendMessage(sqsMessages, messageType, transactionId, queueName, delayInSeconds, attMap,
                 sqsAsyncClient::sendMessageBatch);
     }
 
     @Override
-    public <T> CompletableFuture<SendMessageBatchResponse> sendMessage(List<SqsMessage<T>> sqsMessages, String queueName, Integer delayInSeconds, Map<String, String> attMap) {
+    public <T> CompletableFuture<SendMessageBatchResponse> sendMessage(final List<SqsMessage<T>> sqsMessages,
+                                                                       final String queueName,
+                                                                       final Integer delayInSeconds,
+                                                                       final Map<String, String> attMap) {
+
         return validateAndSendMessage(sqsMessages, () ->
                 sendMessage(sqsMessages, queueName, delayInSeconds, attMap, sqsAsyncClient::sendMessageBatch));
     }
 
     @Override
-    public CompletableFuture<DeleteMessageResponse> deleteMessage(String queueUrl, String receiptHandle) {
+    public CompletableFuture<DeleteMessageResponse> deleteMessage(final String queueUrl,
+                                                                  final String receiptHandle) {
+
         return deleteMessage(queueUrl, receiptHandle, sqsAsyncClient::deleteMessage);
     }
 
     @Override
-    public CompletableFuture<ChangeMessageVisibilityResponse> changeVisibility(String queueUrl, String receiptHandle, Integer visibilityTimeout) {
+    public CompletableFuture<ChangeMessageVisibilityResponse> changeVisibility(final String queueUrl,
+                                                                               final String receiptHandle,
+                                                                               final Integer visibilityTimeout) {
         return changeVisibility(queueUrl, receiptHandle, visibilityTimeout, sqsAsyncClient::changeMessageVisibility);
     }
 }
