@@ -1,9 +1,10 @@
 package org.awsutils.sqs.message;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.awsutils.sqs.client.SnsService;
 import org.awsutils.common.exceptions.UtilsException;
 import org.awsutils.common.util.ApplicationContextUtils;
+import org.awsutils.sqs.client.AsyncSnsService;
+import org.awsutils.sqs.client.SyncSnsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -18,8 +19,12 @@ import java.util.function.Function;
 @JsonIgnoreProperties
 public class SnsMessage<T> extends AbstractAwsMessage<T> {
     @Autowired
-    @Qualifier("snsService")
-    private SnsService snsService;
+    @Qualifier("asyncSnsService")
+    private AsyncSnsService asyncSnsService;
+
+    @Autowired
+    @Qualifier("syncSnsService")
+    private SyncSnsService syncSnsService;
 
     public SnsMessage(final String messageType, final T message) {
         super(messageType, message);
@@ -43,10 +48,18 @@ public class SnsMessage<T> extends AbstractAwsMessage<T> {
     }
 
     public CompletableFuture<PublishResponse> publish(final String topicArn, final Map<String, String> attributes) {
-        final SnsService snsService = this.snsService != null ? this.snsService : ApplicationContextUtils.getInstance().getBean(SnsService.class, "snsService");
+        final AsyncSnsService snsService = this.asyncSnsService != null ? this.asyncSnsService :
+                ApplicationContextUtils.getInstance().getBean(AsyncSnsService.class, "asyncSnsService");
 
         return snsService.publishMessage(this, topicArn, attributes);
     }
+    public PublishResponse publishSync(final String topicArn, final Map<String, String> attributes) {
+        final SyncSnsService snsService = this.syncSnsService != null ? this.syncSnsService :
+                ApplicationContextUtils.getInstance().getBean(SyncSnsService.class, "syncSnsService");
+
+        return snsService.publishMessage(this, topicArn, attributes);
+    }
+
 
     public interface Builder<T> {
         Builder<T> transactionId(String transactionId);

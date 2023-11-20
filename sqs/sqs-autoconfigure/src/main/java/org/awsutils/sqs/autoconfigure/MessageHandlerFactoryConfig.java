@@ -20,7 +20,6 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.Map;
 
 @SuppressWarnings({"SpringFacetCodeInspection", "FieldCanBeLocal", "unused", "unchecked", "rawtypes"})
@@ -73,7 +72,12 @@ public class MessageHandlerFactoryConfig {
     }
 
     @Bean
-    public SnsService snsService() {
+    public AsyncSnsService asyncSnsService() {
         return new SnsServiceImpl(snsAsyncClient);
+    }
+
+    @Bean
+    public SyncSnsService syncSnsService() {
+        return new SyncSnsServiceImpl(snsSyncClient);
     }
 }
