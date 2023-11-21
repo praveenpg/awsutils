@@ -49,8 +49,9 @@ public final class AsyncSqsMessageClientImpl extends AbstractSqsMessageClient<Co
                                                                   final Integer delayInSeconds,
                                                                   final Map<String, String> messageAttMap) {
 
-        return sqsAsyncClient.sendMessage(getSendMessageRequestBuilder(sqsMessage, queueName, delayInSeconds, messageAttMap).build())
-                .thenApplyAsync(response -> handleSqsResponse(sqsMessage, queueName, delayInSeconds, response));
+        return super.sendSingleMessage(sqsMessage, queueName, delayInSeconds, messageAttMap, sendMessageRequest ->
+                sqsAsyncClient.sendMessage(sendMessageRequest).thenApplyAsync(response -> logSqsSendResponse(sqsMessage, queueName,
+                        delayInSeconds, response)));
     }
 
     @Override
@@ -61,10 +62,9 @@ public final class AsyncSqsMessageClientImpl extends AbstractSqsMessageClient<Co
                                                                   final Integer delayInSeconds,
                                                                   final Map<String, String> messageAttMap) {
 
-        return sqsAsyncClient.sendMessage(getSendMessageRequestBuilder(sqsMessage, messageType, transactionId, queueName,
-                        delayInSeconds, messageAttMap).build())
-                .thenApplyAsync(response -> handleSqsResponse(
-                        sqsMessage, messageType, queueName, delayInSeconds, response));
+        return super.sendSingleMessage(sqsMessage, messageType, transactionId, queueName, delayInSeconds, messageAttMap,
+                messageRequest -> sqsAsyncClient.sendMessage(messageRequest).thenApplyAsync(response ->
+                        logSqsSendResponse(sqsMessage, messageType, queueName, delayInSeconds, response)));
     }
 
     @Override
@@ -73,9 +73,9 @@ public final class AsyncSqsMessageClientImpl extends AbstractSqsMessageClient<Co
                                                                        final String transactionId,
                                                                        final String queueName,
                                                                        final Integer delayInSeconds,
-                                                                       final Map<String, String> attMap) {
+                                                                       final Map<String, String> messageAttMap) {
 
-        return sendMessage(sqsMessages, messageType, transactionId, queueName, delayInSeconds, attMap,
+        return sendMessage(sqsMessages, messageType, transactionId, queueName, delayInSeconds, messageAttMap,
                 sqsAsyncClient::sendMessageBatch);
     }
 

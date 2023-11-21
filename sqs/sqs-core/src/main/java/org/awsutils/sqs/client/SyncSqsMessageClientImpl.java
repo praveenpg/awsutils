@@ -36,8 +36,8 @@ public final class SyncSqsMessageClientImpl
                                                final Integer delayInSeconds,
                                                final Map<String, String> messageAttMap) {
 
-        return handleSqsResponse(sqsMessage, queueName, delayInSeconds, sqsSyncClient.sendMessage(
-                getSendMessageRequestBuilder(sqsMessage, queueName, delayInSeconds, messageAttMap).build()));
+        return sendSingleMessage(sqsMessage, queueName, delayInSeconds, messageAttMap, msgRequest ->
+                logSqsSendResponse(sqsMessage, queueName, delayInSeconds, sqsSyncClient.sendMessage(msgRequest)));
     }
 
     @Override
@@ -48,9 +48,10 @@ public final class SyncSqsMessageClientImpl
                                                final Integer delayInSeconds,
                                                final Map<String, String> messageAttMap) {
 
-        return handleSqsResponse(sqsMessage, messageType, queueName, delayInSeconds, sqsSyncClient.sendMessage(
-                getSendMessageRequestBuilder(sqsMessage, messageType,
-                        transactionId, queueName, delayInSeconds, messageAttMap).build()));
+        return sendSingleMessage(sqsMessage, messageType, transactionId, queueName, delayInSeconds, messageAttMap,
+                msgRequest ->
+                        logSqsSendResponse(sqsMessage, messageType, queueName, delayInSeconds,
+                                sqsSyncClient.sendMessage(msgRequest)));
     }
 
     @Override
