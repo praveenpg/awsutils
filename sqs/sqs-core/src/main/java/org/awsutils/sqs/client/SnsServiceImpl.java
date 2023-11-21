@@ -16,7 +16,10 @@ public final class SnsServiceImpl extends AbstractSnsService<CompletableFuture<P
     }
 
     @Override
-    public <T> CompletableFuture<PublishResponse> publishMessage(final SnsMessage<T> snsMessage, final String topicArn, final Map<String, String> attributes) {
+    public <T> CompletableFuture<PublishResponse> publishMessage(final SnsMessage<T> snsMessage,
+                                                                 final String topicArn,
+                                                                 final Map<String, String> attributes) {
+
         return super.publishMessage(snsMessage, topicArn, attributes, snsAsyncClient::publish);
     }
 }
