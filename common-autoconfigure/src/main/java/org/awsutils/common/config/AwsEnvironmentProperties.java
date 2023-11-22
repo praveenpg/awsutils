@@ -18,4 +18,7 @@ public class AwsEnvironmentProperties implements IAwsEnvironmentProperties {
     private String localAwsEndpoint;
     private Duration connectionTimeout = Duration.ofSeconds(5);
     private Duration connectionMaxIdleTime = Duration.ofSeconds(5);
+    private Duration connectionAcquisitionTimeout = Duration.ofSeconds(5);
+    private Duration connectionTimeToLive = Duration.ofSeconds(5);
+    private Boolean expectContinueEnabled;
 }

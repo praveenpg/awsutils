@@ -11,8 +11,11 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.apache.internal.DefaultConfiguration;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
+
+import java.util.Optional;
 
 import static org.awsutils.common.config.ConfigConstants.CONFIG_PREFIX;
 
@@ -68,6 +71,10 @@ public class AwsAutoConfiguration {
     public SdkHttpClient sdkHttpClient(final AwsEnvironmentProperties awsEnvironmentProperties) {
         log.info("Constructing defaultSdkAsyncHttpClient");
         return ApacheHttpClient.builder()
+                .connectionAcquisitionTimeout(awsEnvironmentProperties.getConnectionAcquisitionTimeout())
+                .expectContinueEnabled(Optional.ofNullable(awsEnvironmentProperties.getExpectContinueEnabled())
+                        .orElse(DefaultConfiguration.EXPECT_CONTINUE_ENABLED))
+                .connectionTimeToLive(awsEnvironmentProperties.getConnectionTimeToLive())
                 .maxConnections(awsEnvironmentProperties.getMaxConcurrency())
                 .connectionTimeout(awsEnvironmentProperties.getConnectionTimeout())
                 .connectionMaxIdleTime(awsEnvironmentProperties.getConnectionMaxIdleTime())
