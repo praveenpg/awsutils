@@ -33,10 +33,7 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -314,27 +311,32 @@ public class SqsMessageListenerInitializer {
         }
     }
 
-    public static void validate(final Object a) throws IllegalAccessException, JsonProcessingException {
+    public static void validate(final Object a) {
         final Field[] fields = a.getClass().getDeclaredFields();
-        final List<String> errorList = new ArrayList<>();
         final Map<String, Object> errorMap = new HashMap<>();
+        final List<String> errorList = Arrays.stream(fields)
+                .filter(field -> !Modifier.isStatic(field.getModifiers()))
+                .map(field -> Tuple.of(field, field.getAnnotation(NotNull.class)))
+                .filter(tuple -> tuple._2() != null)
+                .map(tuple -> Tuple.of(tuple._2(), getFieldValue(a, tuple._1()), tuple._1()))
+                .filter(tuple -> tuple._2() == null)
+                .map(tuple -> tuple._1.message())
+                .toList();
 
-        for (final Field field : fields) {
+
+/*        for (final Field field : fields) {
             if(!Modifier.isStatic(field.getModifiers())) {
                 final NotNull notNull = field.getAnnotation(NotNull.class);
 
                 if(notNull != null) {
-                    final Object value;
-
-                    field.setAccessible(true);
-                    value = field.get(a);
+                    final Object value = getFieldValue(a, field);
 
                     if(value == null) {
                         errorList.add(notNull.message());
                     }
                 }
             }
-        }
+        }*/
 
         if(!CollectionUtils.isEmpty(errorList)) {
 
@@ -345,6 +347,18 @@ public class SqsMessageListenerInitializer {
             logErrorMessageToConsole(errorList);
 
             throw new ValidationException(Utils.constructJson(errorMap));
+        }
+    }
+
+    private static Object getFieldValue(Object a, Field field) {
+        try {
+            final Object value;
+
+            field.setAccessible(true);
+            value = field.get(a);
+            return value;
+        } catch (final IllegalAccessException e) {
+            throw new RuntimeException(e);
         }
     }
 

@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.awsutils</groupId>
         <artifactId>starters</artifactId>
-        <version>1.0.2-beta19</version>
+        <version>1.0.2-beta20</version>
     </parent>
 
     <artifactId>sqs-starter</artifactId>

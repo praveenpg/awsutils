@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @SuppressWarnings({"unused", "unchecked", "rawtypes", "CollectionAddAllCanBeReplacedWithConstructor", "Convert2MethodRef", "RedundantSuppression"})
@@ -117,9 +118,7 @@ public final class DbUtils {
             set.addAll(attributeValue.ss());
             Object arr = Array.newInstance(fieldType, set.size());
 
-            for (int i = 0; i < set.size(); i++) {
-                Array.set(arr, i, set.get(i));
-            }
+            IntStream.range(0, set.size()).forEach(i -> Array.set(arr, i, set.get(i)));
         } else if (attributeValue.hasNs()) {
             final List<String> set = new ArrayList<>();
 
@@ -127,9 +126,7 @@ public final class DbUtils {
 
             Object arr = Array.newInstance(fieldType, set.size());
 
-            for (int i = 0; i < set.size(); i++) {
-                Array.set(arr, i, set.get(i));
-            }
+            IntStream.range(0, set.size()).forEach(i -> Array.set(arr, i, set.get(i)));
 
             return arr;
         } else if (attributeValue.hasL()) {
@@ -460,17 +457,20 @@ public final class DbUtils {
         final Map<String, Object> map = new HashMap<>();
         final Map<String, AttributeValue> attMap = attributeValue.m();
 
-        for (Map.Entry<String, AttributeValue> entry : attMap.entrySet()) {
-            final AttributeValue attValue = entry.getValue();
-            final String key = entry.getKey();
-            final Object value;
-
-            value = getValueFromAttributeValue(attValue);
-
-            map.put(key, value);
-        }
+        attMap.entrySet().stream().filter(entry -> entry.getValue() != null)
+                .forEach(entry -> addToAttributeValueMap(entry, map));
 
         return map;
+    }
+
+    private static void addToAttributeValueMap(Map.Entry<String, AttributeValue> entry, Map<String, Object> map) {
+        final AttributeValue attValue = entry.getValue();
+        final String key = entry.getKey();
+        final Object value;
+
+        value = getValueFromAttributeValue(attValue);
+
+        map.put(key, value);
     }
 
     private static Object getValueFromAttributeValue(final AttributeValue attValue) {
@@ -494,13 +494,9 @@ public final class DbUtils {
     }
 
     public static List<?> convertAttributeValueToList(final AttributeValue attributeValue) {
-        final List<AttributeValue> attList = attributeValue.l();
-        final List<Object> list = new ArrayList<>();
-
-        for (AttributeValue attValue : attList) {
-            list.add(getValueFromAttributeValue(attValue));
-        }
-
-        return list;
+        return attributeValue.l()
+                .stream()
+                .map(DbUtils::getValueFromAttributeValue)
+                .collect(Collectors.toList());
     }
 }

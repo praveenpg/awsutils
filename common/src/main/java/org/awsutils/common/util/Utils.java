@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 @Slf4j
 public class Utils {
@@ -133,9 +134,7 @@ public class Utils {
         final int length = Array.getLength(value);
         final ImmutableList.Builder<Object> builder = ImmutableList.builder();
 
-        for(int i = 0; i < length; i++) {
-            builder.add(Array.get(value, i));
-        }
+        IntStream.range(0, length).forEach(i -> builder.add(Array.get(value, i)));
 
         return builder.build();
     }
