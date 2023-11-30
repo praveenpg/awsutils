@@ -73,7 +73,7 @@ public class MessageHandlerFactoryConfig {
 
     @Bean
     public AsyncSnsService asyncSnsService() {
-        return new SnsServiceImpl(snsAsyncClient);
+        return new AsyncSnsServiceImpl(snsAsyncClient);
     }
 
     @Bean

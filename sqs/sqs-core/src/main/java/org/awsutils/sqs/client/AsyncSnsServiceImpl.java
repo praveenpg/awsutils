@@ -8,10 +8,11 @@ import software.amazon.awssdk.services.sns.model.PublishResponse;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public final class SnsServiceImpl extends AbstractSnsService<CompletableFuture<PublishResponse>> implements AsyncSnsService {
+public final class AsyncSnsServiceImpl extends AbstractSnsService<CompletableFuture<PublishResponse>>
+        implements AsyncSnsService {
     private final SnsAsyncClient snsAsyncClient;
 
-    public SnsServiceImpl(final SnsAsyncClient snsAsyncClient) {
+    public AsyncSnsServiceImpl(final SnsAsyncClient snsAsyncClient) {
         this.snsAsyncClient = snsAsyncClient;
     }
 

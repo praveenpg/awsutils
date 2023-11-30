@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-abstract sealed class AbstractSnsService<A> implements SnsService<A> permits SyncSnsServiceImpl, SnsServiceImpl {
+abstract sealed class AbstractSnsService<A> implements SnsService<A> permits SyncSnsServiceImpl, AsyncSnsServiceImpl {
     private static final String STRING_DATA_TYPE = "String";
 
     protected <T> A publishMessage(final SnsMessage<T> snsMessage,
