@@ -1,16 +1,17 @@
 package org.awsutils.sqs.autoconfigure;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 
 
+@Getter
 @ConfigurationProperties(prefix = "org.awsutils.aws.sqs.listener")
 @Slf4j
 public class SqsMessageListenerProperties {
     private int threadPoolSize;
-    private String queueName;
     private String rateLimiterName;
     private String maximumNumberOfMessagesKey;
     private String messageHandlerRateLimiterName;
@@ -30,36 +31,12 @@ public class SqsMessageListenerProperties {
         log.info("Constructing SqsMessageListenerProperties");
     }
 
-    public int getThreadPoolSize() {
-        return threadPoolSize;
-    }
-
     public void setThreadPoolSize(final int threadPoolSize) {
         this.threadPoolSize = threadPoolSize;
     }
 
-    public String getQueueName() {
-        return queueName;
-    }
-
-    public void setQueueName(final String queueName) {
-        this.queueName = queueName;
-    }
-
-    public String getRateLimiterName() {
-        return rateLimiterName;
-    }
-
     public void setRateLimiterName(final String rateLimiterName) {
         this.rateLimiterName = rateLimiterName;
-    }
-
-    public String getMaximumNumberOfMessagesKey() {
-        return maximumNumberOfMessagesKey;
-    }
-
-    public String getListenerName() {
-        return listenerName;
     }
 
     public void setListenerName(final String listenerName) {
@@ -70,56 +47,28 @@ public class SqsMessageListenerProperties {
         this.maximumNumberOfMessagesKey = maximumNumberOfMessagesKey;
     }
 
-    public String getScheduleRunIntervalKey() {
-        return scheduleRunIntervalKey;
-    }
-
     public void setScheduleRunIntervalKey(final String scheduleRunIntervalKey) {
         this.scheduleRunIntervalKey = scheduleRunIntervalKey;
-    }
-
-    public String getMessageHandlerRateLimiterName() {
-        return messageHandlerRateLimiterName;
     }
 
     public void setMessageHandlerRateLimiterName(final String messageHandlerRateLimiterName) {
         this.messageHandlerRateLimiterName = messageHandlerRateLimiterName;
     }
 
-    public String getStatusProperty() {
-        return statusProperty;
-    }
-
     public void setStatusProperty(final String statusProperty) {
         this.statusProperty = statusProperty;
-    }
-
-    public int getMaxMessageProcessorQueueSize() {
-        return maxMessageProcessorQueueSize;
     }
 
     public void setMaxMessageProcessorQueueSize(final int maxMessageProcessorQueueSize) {
         this.maxMessageProcessorQueueSize = maxMessageProcessorQueueSize;
     }
 
-    public Integer getWaitTimeInSeconds() {
-        return waitTimeInSeconds;
-    }
-
     public void setWaitTimeInSeconds(final Integer waitTimeInSeconds) {
         this.waitTimeInSeconds = waitTimeInSeconds;
     }
 
-    public String getNumberOfListenersProperty() {
-        return numberOfListenersProperty;
-    }
-
     public void setNumberOfListenersProperty(final String numberOfListenersProperty) {
         this.numberOfListenersProperty = numberOfListenersProperty;
-    }
-
-    public String getQueueUrl() {
-        return queueUrl;
     }
 
     public void setQueueUrl(final String queueUrl) {
@@ -130,7 +79,6 @@ public class SqsMessageListenerProperties {
     public String toString() {
         return "SqsMessageListenerProperties{" +
                 "threadPoolSize=" + threadPoolSize +
-                ", queueName='" + queueName + '\'' +
                 ", rateLimiterName='" + rateLimiterName + '\'' +
                 ", maximumNumberOfMessagesKey='" + maximumNumberOfMessagesKey + '\'' +
                 ", messageHandlerRateLimiterName='" + messageHandlerRateLimiterName + '\'' +

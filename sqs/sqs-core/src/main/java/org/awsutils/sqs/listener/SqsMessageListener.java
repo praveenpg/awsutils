@@ -17,7 +17,6 @@ public interface SqsMessageListener {
     }
 
     interface Builder {
-        Builder queueName(String queueName);
 
         Builder queueUrl(String queueUrl);
 

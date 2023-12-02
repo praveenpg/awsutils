@@ -13,23 +13,23 @@ import org.awsutils.sqs.client.SyncSqsMessageClient;
 import org.awsutils.sqs.config.WorkerNodeCheckFunc;
 import org.awsutils.sqs.handler.MessageHandlerFactory;
 import org.awsutils.sqs.handler.SqsMessageHandler;
-import org.awsutils.sqs.message.MessageAttribute;
 import org.awsutils.sqs.message.SnsSubscriptionMessage;
 import org.awsutils.sqs.message.SqsMessage;
 import org.awsutils.sqs.message.TaskInput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.*;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName;
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
 import java.lang.reflect.Proxy;
 import java.math.BigInteger;
-import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
@@ -40,14 +40,11 @@ import java.util.stream.Collectors;
 @SuppressWarnings({"unused", "ClassWithTooManyFields"})
 @Slf4j
 final class SqsMessageListenerImpl implements SqsMessageListener {
-    private final String queueName;
     @SuppressWarnings("FieldCanBeLocal")
     private final Environment environment;
     private String queueUrl;
-
     private final SqsClient sqsSyncClient;
     private final MessageHandlerFactory messageHandlerFactory;
-
     private final SyncSqsMessageClient syncSqsMessageClient;
     private final String rateLimiterName;
     private final ExecutorService executorService;
@@ -57,23 +54,19 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     private final Semaphore semaphore;
     private final String listenerName;
     private final String messageHandlerRateLimiterName;
-    private RateLimiter rateLimiter;
-    private RateLimiter messageHandlerRateLimiter;
-    private final Function<String, String> queueUrlFunc;
+    private RateLimiter rateLimiter = new PassthroughRateLimiter();
+    private RateLimiter messageHandlerRateLimiter = new PassthroughRateLimiter();
     private final boolean listenerEnabled;
     private final Integer waitTimeInSeconds;
-
     private static final Integer MAX_NUMBER_OF_SQS_MESSAGES = 10;
     private static final int MAXIMUM_NUMBER_OF_MESSAGES = 2000;
     private static final long SEMAPHORE_TIMEOUT_IN_SECONDS = 15L;
     private static final long CHANGE_VISIBILITY_PERIOD_IN_SECONDS = TimeUnit.MINUTES.toSeconds(15L);
-    private static final Logger LOGGER = LoggerFactory.getLogger(SqsMessageListenerImpl.class);
     @SuppressWarnings("InstantiatingAThreadWithDefaultRunMethod")
     private static final Thread SHUTDOWN_HOOK = new Thread();
 
 
-    private SqsMessageListenerImpl(final String queueName,
-                                   final String queueUrl,
+    private SqsMessageListenerImpl(final String queueUrl,
                                    final SqsClient sqsSyncClient,
                                    final MessageHandlerFactory messageHandlerFactory,
                                    final SyncSqsMessageClient syncSqsMessageClient,
@@ -88,9 +81,10 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                                    final String statusProperty,
                                    final Integer waitTimeInSeconds) {
 
+
+        final var timer = new Timer();
         this.sqsSyncClient = sqsSyncClient;
         this.syncSqsMessageClient = syncSqsMessageClient;
-
         this.rateLimiterName = rateLimiterName;
         this.messageHandlerRateLimiterName = messageHandlerRateLimiterName;
         this.waitTimeInSeconds = waitTimeInSeconds;
@@ -104,13 +98,16 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         this.environment = ApplicationContextUtils.getInstance().getBean(Environment.class);
         this.listenerEnabled = StringUtils.hasLength(statusProperty) ?
                 environment.getProperty(statusProperty, Boolean.class, true) : true;
-        this.queueName = queueName;
         this.queueUrl = queueUrl;
-        this.queueUrlFunc = StringUtils.hasLength(queueUrl) ? qName -> this.queueUrl : qName
-                -> getQueueUrl(syncSqsMessageClient, qName);
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Creating SqsMessageListener: {}, Queue: {}", listenerName, queueName);
+
+        if (!StringUtils.hasLength(queueUrl)) {
+            throw new IllegalStateException("QueueUrl is required");
         }
+        if (log.isInfoEnabled()) {
+            log.info("Creating SqsMessageListener: {}, Queue: {}", listenerName, queueUrl);
+        }
+
+        timer.schedule(new DefaultTimerTask(this::setRateLimiters), 10000);
     }
 
     private String getQueueUrl(final SyncSqsMessageClient sqsMessageClient, final String queueName) {
@@ -126,34 +123,27 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     }
 
     public void receive() {
-        if (listenerEnabled && workerNodeCheck.check()) {
-            setRateLimiters();
-
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(MessageFormat.format("Receiving messages after starter in listener [{0}]",
-                        listenerName));
-            }
-
-            try {
+        try {
+            if (listenerEnabled && workerNodeCheck.check()) {
+                log.debug("Receiving messages after starter in listener [{}]",
+                        listenerName);
                 processUsingLock();
-            } catch (final InterruptedException e) {
-                Utils.handleInterruptedException(e, () -> {});
+            } else {
+                log.debug("Not receiving messages since worker node check returned false");
             }
-        } else {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Not receiving messages since worker node check returned false");
-            }
+        } catch (final InterruptedException e) {
+            Utils.handleInterruptedException(e, () -> {});
         }
     }
 
     @SuppressWarnings("ConstantConditions")
     private void setRateLimiters() {
         try {
-            if (rateLimiter == null && StringUtils.hasLength(rateLimiterName)) {
+            if (StringUtils.hasLength(rateLimiterName)) {
                 this.rateLimiter = RateLimiterFactory.getInstance().getRateLimiter(rateLimiterName);
             }
 
-            if (messageHandlerRateLimiter == null && StringUtils.hasLength(messageHandlerRateLimiterName)) {
+            if (StringUtils.hasLength(messageHandlerRateLimiterName)) {
                 this.messageHandlerRateLimiter = RateLimiterFactory.getInstance()
                         .getRateLimiter(messageHandlerRateLimiterName);
             }
@@ -166,31 +156,23 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
 
     private void processUsingLock() throws InterruptedException {
         Utils.executeUsingSemaphore(semaphore, SEMAPHORE_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS, () -> {
-            int messageCounter = 0;
-            boolean proceed = true;
-
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(MessageFormat.format("Checking for messages from SQS in listener [{0}]: {1}",
-                        listenerName, queueUrlFunc.apply(queueName)));
-            }
+            var messageCounter = 0;
+            var proceed = true;
+            log.debug("Checking for messages from SQS in listener [{}]: {}", listenerName, queueUrl);
 
             while (proceed) {
-                final List<Message> messages = receiveMessages();
+                final var messages = receiveMessages();
 
                 messageCounter += messages.size();
 
                 proceed = processSqsMessages(messages, messageCounter);
 
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug(MessageFormat.format("Proceed with receiving messages [{0}]: {1}", listenerName,
-                            proceed));
-                }
+                log.debug("Proceed with receiving messages [{}]: {}", listenerName, proceed);
             }
 
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(MessageFormat.format("Total number of messages received: {0}", messageCounter));
-                LOGGER.debug(MessageFormat.format("Rate limiter used: {0}", (rateLimiter != null ?
-                        rateLimiter.getRateLimiterName() : null)));
+            if (log.isDebugEnabled()) {
+                log.debug("Total number of messages received: {}", messageCounter);
+                log.debug("Rate limiter used: {}", (rateLimiter != null ? rateLimiter.getRateLimiterName() : null));
             }
         });
     }
@@ -198,25 +180,16 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     private boolean processSqsMessages(final List<Message> messages, final int messageCounter) {
         final boolean proceed;
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("In processSqsMessages: " + messages);
-        }
-
+        log.debug("In processSqsMessages: " + messages);
 
         if (!CollectionUtils.isEmpty(messages)) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Message list is not empty..");
-            }
-
+            log.debug("Message list is not empty..");
             messages.forEach(this::processSqsMessage);
 
             proceed = (!StringUtils.hasLength(maximumNumberOfMessagesKey) ? MAXIMUM_NUMBER_OF_MESSAGES :
                     propertyReaderFunction.apply(maximumNumberOfMessagesKey)) > messageCounter;
         } else {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(MessageFormat.format("List of messages is empty in listener [{0}]: {1}",
-                        listenerName, messages != null ? messages.size() : 0));
-            }
+            log.debug("List of messages is empty in listener [{}]: {}", listenerName, 0);
 
             proceed = false;
         }
@@ -226,19 +199,17 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
 
     @SuppressWarnings("FunctionalExpressionCanBeFolded")
     private void processSqsMessage(final Message message) {
-        final long startTime = System.currentTimeMillis();
-        final ChangeMessageVisibilityResponse changeVisibilityResp = syncSqsMessageClient
-                .changeVisibility(queueUrlFunc.apply(queueName), message.receiptHandle(),
+        final var startTime = System.currentTimeMillis();
+        final var changeVisibilityResp = syncSqsMessageClient
+                .changeVisibility(queueUrl, message.receiptHandle(),
                         (int) CHANGE_VISIBILITY_PERIOD_IN_SECONDS);
         final Runnable action0 = () -> {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Processing message: " + message.messageId());
-            }
+            log.debug("Processing message: " + message.messageId());
 
             executorService.submit(() -> processMessage(message, startTime));
         };
 
-        if(rateLimiter == null) {
+        if (rateLimiter == null) {
             action0.run();
         } else {
             rateLimiter.execute(action0::run);
@@ -247,40 +218,35 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
 
     private void processMessage(final Message message, final long startTime) {
         try {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(MessageFormat.format("Processing message in listener[{0}]: {1}",
-                        listenerName, message));
-            }
-            final long timeTakenToStartProcessing = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()
+            log.debug("Processing message in listener[{}]: {}", listenerName, message);
+            final var timeTakenToStartProcessing = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()
                     - startTime);
 
             if (timeTakenToStartProcessing < CHANGE_VISIBILITY_PERIOD_IN_SECONDS) {
                 final Tuple3<SqsMessage<?>, Map<String, String>, TaskInput<?>> sqsMessage;
-                final String body = message.body();
-                final String receiptHandle = message.receiptHandle();
-                final String receiveCount = message.attributes().get(MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT);
+                final var body = message.body();
+                final var receiptHandle = message.receiptHandle();
+                final var receiveCount = message.attributes().get(MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT);
                 final SqsMessageHandler<?> messageHandler;
-                final Map<String, String> messageAttributes = message.messageAttributes().entrySet().stream()
+                final var messageAttributes = message.messageAttributes().entrySet().stream()
                         .collect(Collectors.toMap(Map.Entry::getKey, a -> a.getValue().stringValue()));
-                final String sqsMessageWrapperPresent = messageAttributes.get(MessageConstants.SQS_MESSAGE_WRAPPER_PRESENT);
+                final var sqsMessageWrapperPresent = messageAttributes.get(MessageConstants.SQS_MESSAGE_WRAPPER_PRESENT);
 
-                if((StringUtils.hasLength(sqsMessageWrapperPresent) && "true".equalsIgnoreCase(sqsMessageWrapperPresent))
+                if ((StringUtils.hasLength(sqsMessageWrapperPresent) && "true".equalsIgnoreCase(sqsMessageWrapperPresent))
                         || message.body().contains("\"messageType")) {
                     sqsMessage = constructSqsMessage(body, receiptHandle);
                     messageHandler = messageHandlerFactory.getMessageHandler(sqsMessage._1(),
                             receiptHandle,
-                            queueUrlFunc.apply(queueName),
+                            queueUrl,
                             StringUtils.hasLength(receiveCount) ? Integer.parseInt(receiveCount) : 0,
                             CollectionUtils.isEmpty(messageAttributes) ? sqsMessage._2() : messageAttributes,
                             messageHandlerRateLimiter
                     );
 
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug(MessageFormat.format("Handling message by {0}", messageHandler));
-                    }
-                } else if(StringUtils.hasLength(messageAttributes.get(MessageConstants.MESSAGE_TYPE))){
-                    final String messageType = messageAttributes.get(MessageConstants.MESSAGE_TYPE);
-                    final String transactionId = messageAttributes.get(MessageConstants.TRANSACTION_ID);
+                    log.debug("Handling message by {}", messageHandler);
+                } else if (StringUtils.hasLength(messageAttributes.get(MessageConstants.MESSAGE_TYPE))) {
+                    final var messageType = messageAttributes.get(MessageConstants.MESSAGE_TYPE);
+                    final var transactionId = messageAttributes.get(MessageConstants.TRANSACTION_ID);
 
                     messageHandler = messageHandlerFactory.getMessageHandler(body,
                             messageType,
@@ -300,17 +266,17 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         } catch (final UtilsException e) {
             handleUtilsException(message, e);
         } catch (final Exception e) {
-            LOGGER.error(MessageFormat.format("Exception in listener[{0}]: {1}", listenerName, e.getMessage()), e);
+            log.error("Exception in listener[{}]: {}", listenerName, e.getMessage(), e);
         }
     }
 
     private void handleUtilsException(final Message message, final UtilsException e) {
         if ("NO_HANDLER_FOR_MESSAGE_TYPE".equalsIgnoreCase(e.getErrorType()) || "INVALID_JSON"
                 .equalsIgnoreCase(e.getErrorType())) {
-            LOGGER.error(MessageFormat.format("Exception in listener[{0}]: {1}", listenerName, e.getMessage()), e);
-            syncSqsMessageClient.deleteMessage(queueUrlFunc.apply(queueName), message.receiptHandle());
+            log.error("Exception in listener[{}]: {}", listenerName, e.getMessage(), e);
+            syncSqsMessageClient.deleteMessage(queueUrl, message.receiptHandle());
         } else {
-            LOGGER.error(MessageFormat.format("Exception in listener[{0}]: {1}", listenerName, e.getMessage()), e);
+            log.error("Exception in listener[{}]: {}", listenerName, e.getMessage(), e);
         }
     }
 
@@ -333,9 +299,9 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
                                                                                             final String receiptHandle) {
 
         final SqsMessage<?> sqsMessage;
-        final SnsSubscriptionMessage snsSubscriptionMessage = Utils.constructFromJson(SnsSubscriptionMessage.class, body);
-        final String snsMessage = snsSubscriptionMessage.getMessage();
-        final Map<String, MessageAttribute> messageAttributes = snsSubscriptionMessage.getMessageAttributes();
+        final var snsSubscriptionMessage = Utils.constructFromJson(SnsSubscriptionMessage.class, body);
+        final var snsMessage = snsSubscriptionMessage.getMessage();
+        final var messageAttributes = snsSubscriptionMessage.getMessageAttributes();
         final TaskInput taskInput;
         final Map<String, String> messAttr;
 
@@ -343,7 +309,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
             taskInput = Utils.constructFromJson(TaskInput.class, snsMessage);
 
             if (taskInput.getInput() == null) {
-                syncSqsMessageClient.deleteMessage(queueName, receiptHandle);
+                syncSqsMessageClient.deleteMessage(queueUrl, receiptHandle);
 
                 throw new UtilsException("EMPTY_MESSAGE_BODY", "Empty sqs message body");
             }
@@ -363,8 +329,8 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
 
 
     private List<Message> receiveMessages() {
-        final ReceiveMessageRequest request = ReceiveMessageRequest.builder()
-                .queueUrl(queueUrlFunc.apply(queueName))
+        final var request = ReceiveMessageRequest.builder()
+                .queueUrl(queueUrl)
                 .attributeNames(QueueAttributeName.ALL)
                 .messageAttributeNames("All")
                 .maxNumberOfMessages(MAX_NUMBER_OF_SQS_MESSAGES)
@@ -379,7 +345,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     }
 
     private static class SqsMessageListenerBuilder implements SqsMessageListener.Builder {
-        private String queueName;
         private MessageHandlerFactory messageHandlerFactory;
         private ExecutorService executorService;
         private String maximumNumberOfMessagesKey;
@@ -396,12 +361,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         private SqsClient sqsSyncClient;
 
         private SyncSqsMessageClient syncSqsMessageClient;
-
-        @Override
-        public Builder queueName(final String queueName) {
-            this.queueName = queueName;
-            return this;
-        }
 
         @Override
         public Builder queueUrl(final String queueUrl) {
@@ -499,7 +458,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         @Override
         public SqsMessageListener build() {
             final SqsMessageListenerImpl sqsMessageListener = new SqsMessageListenerImpl(
-                    queueName,
                     queueUrl, sqsSyncClient,
                     messageHandlerFactory,
                     syncSqsMessageClient, executorService,

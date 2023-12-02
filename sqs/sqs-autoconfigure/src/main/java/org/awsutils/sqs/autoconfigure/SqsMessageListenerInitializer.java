@@ -1,6 +1,5 @@
 package org.awsutils.sqs.autoconfigure;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import jakarta.annotation.PostConstruct;
@@ -17,7 +16,6 @@ import org.awsutils.sqs.listener.SqsMessageListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
@@ -33,7 +31,10 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -98,60 +99,70 @@ public class SqsMessageListenerInitializer {
     @PostConstruct
     public void init() {
         if(sqsMessageListenerListProperties != null) {
-            final Map<String, SqsMessageListenerProperties> listenerMap = sqsMessageListenerListProperties.getListener();
+            final var listenerMap = sqsMessageListenerListProperties.getListener();
 
             if (!CollectionUtils.isEmpty(listenerMap)) {
-                final AutowireCapableBeanFactory autowireBeanFactory = applicationContext.getAutowireCapableBeanFactory();
-                final BeanDefinitionRegistry registry = (BeanDefinitionRegistry) autowireBeanFactory;
+                final var autowireBeanFactory = applicationContext.getAutowireCapableBeanFactory();
+                final var registry = (BeanDefinitionRegistry) autowireBeanFactory;
 
-                listenerMap.keySet().forEach(listenerKey -> registerSqsListener(registry, listenerKey, listenerMap.get(listenerKey)));
+                listenerMap.keySet().forEach(listenerKey -> registerSqsListener(registry, listenerKey, listenerMap
+                        .get(listenerKey)));
             }
         }
     }
 
     @SuppressWarnings({"UnusedAssignment", "DuplicatedCode"})
-    public void registerSqsListener(final BeanDefinitionRegistry registry, final String listenerKey, final SqsMessageListenerProperties sqsMessageListenerProperties) {
+    public void registerSqsListener(final BeanDefinitionRegistry registry, final String listenerKey,
+                                    final SqsMessageListenerProperties sqsMessageListenerProperties) {
+
         try {
-            final GenericBeanDefinition definition = new GenericBeanDefinition();
-            final ConstructorArgumentValues constructorArgumentValues = new ConstructorArgumentValues();
-            final String listenerName = sqsMessageListenerProperties.getListenerName();
-            final String beanName = MessageFormat.format(SQS_MESSAGE_LISTENER_KEY, listenerKey);
-            final String rateLimiterName = sqsMessageListenerProperties.getRateLimiterName();
-            final String listenerEnabledProperty = sqsMessageListenerProperties.getStatusProperty();
-            final Integer waitTimeInSeconds = sqsMessageListenerProperties.getWaitTimeInSeconds();
-            final String messageHandlerRateLimiterName = sqsMessageListenerProperties.getMessageHandlerRateLimiterName();
-            int index = 0;
+            final var definition = new GenericBeanDefinition();
+            final var constructorArgumentValues = new ConstructorArgumentValues();
+            final var listenerName = sqsMessageListenerProperties.getListenerName();
+            final var beanName = MessageFormat.format(SQS_MESSAGE_LISTENER_KEY, listenerKey);
+            final var rateLimiterName = sqsMessageListenerProperties.getRateLimiterName();
+            final var listenerEnabledProperty = sqsMessageListenerProperties.getStatusProperty();
+            final var waitTimeInSeconds = sqsMessageListenerProperties.getWaitTimeInSeconds();
+            final var messageHandlerRateLimiterName = sqsMessageListenerProperties.getMessageHandlerRateLimiterName();
+            var index = 0;
             final WorkerNodeCheckFunc finalWorkerNodeCheckFunc = workerNodeCheckFunc == null ?
                     () -> StringUtils.isEmpty(listenerEnabledProperty) || isSqsListenerEnabled(listenerEnabledProperty) :
-                    () -> (StringUtils.isEmpty(listenerEnabledProperty) || isSqsListenerEnabled(listenerEnabledProperty)) && workerNodeCheckFunc.check();
+                    () -> (StringUtils.isEmpty(listenerEnabledProperty) || isSqsListenerEnabled(listenerEnabledProperty))
+                            && workerNodeCheckFunc.check();
             final Function<Integer, SqsMessageListener> sqsMessageListenerFunc = c -> SqsMessageListener
                     .builder()
                     .sqsSyncClient(sqsSyncClient)
-                    .queueName(sqsMessageListenerProperties.getQueueName())
                     .messageHandlerFactory(messageHandlerFactory)
-                    .executorService(sqsCommonProperties.isUseCommonThreadPool() ? commonExecutorService.executorService() : createExecutorService(sqsMessageListenerProperties.getThreadPoolSize()))
+                    .executorService(sqsCommonProperties.isUseCommonThreadPool() ? commonExecutorService.executorService() :
+                            createExecutorService(sqsMessageListenerProperties.getThreadPoolSize()))
                     .rateLimiterName(!StringUtils.isEmpty(rateLimiterName) ? rateLimiterName : null)
                     .maximumNumberOfMessagesKey(sqsMessageListenerProperties.getMaximumNumberOfMessagesKey())
                     .semaphore(new Semaphore(1))
                     .propertyReaderFunction(propertyFunc)
                     .syncSqsMessageClient(syncSqsMessageClient)
                     .workerNodeCheck(finalWorkerNodeCheckFunc)
-                    .listenerName(!StringUtils.isEmpty(listenerName) ? String.format("%s_%d", listenerName, c) : String.format("%s_%d", listenerKey, c))
-                    .messageHandlerRateLimiter(!StringUtils.isEmpty(messageHandlerRateLimiterName) ? messageHandlerRateLimiterName : null)
+                    .listenerName(!StringUtils.isEmpty(listenerName) ? String.format("%s_%d", listenerName, c) :
+                            String.format("%s_%d", listenerKey, c))
+                    .messageHandlerRateLimiter(!StringUtils.isEmpty(messageHandlerRateLimiterName) ?
+                            messageHandlerRateLimiterName : null)
                     .statusProperty(!StringUtils.isEmpty(listenerEnabledProperty) ? listenerEnabledProperty : null)
-                    .waitTimeInSeconds(waitTimeInSeconds != null && waitTimeInSeconds > 0 ? waitTimeInSeconds : DEFAULT_WAIT_TIME_IN_SECONDS)
+                    .waitTimeInSeconds(waitTimeInSeconds != null && waitTimeInSeconds > 0 ? waitTimeInSeconds :
+                            DEFAULT_WAIT_TIME_IN_SECONDS)
                     .queueUrl(sqsMessageListenerProperties.getQueueUrl())
                     .build();
 
             validate(sqsMessageListenerProperties);
 
-            definition.setBeanClassName("org.awsutils.sqs.autoconfigure.SqsMessageListenerInitializer.SqsMessageListenerWrapper");
+            definition.setBeanClassName("org.awsutils.sqs.autoconfigure.SqsMessageListenerInitializer" +
+                    ".SqsMessageListenerWrapper");
 
             constructorArgumentValues.addIndexedArgumentValue(index++, executorServices);
-            constructorArgumentValues.addIndexedArgumentValue(index++, sqsMessageListenerProperties.getNumberOfListenersProperty());
+            constructorArgumentValues.addIndexedArgumentValue(index++, sqsMessageListenerProperties
+                    .getNumberOfListenersProperty());
             constructorArgumentValues.addIndexedArgumentValue(index++, environment);
             constructorArgumentValues.addIndexedArgumentValue(index++, sqsMessageListenerFunc);
-            constructorArgumentValues.addIndexedArgumentValue(index++, !StringUtils.isEmpty(listenerName) ? listenerName : listenerKey);
+            constructorArgumentValues.addIndexedArgumentValue(index++, !StringUtils.isEmpty(listenerName) ?
+                    listenerName : listenerKey);
 
             definition.setConstructorArgumentValues(constructorArgumentValues);
 
@@ -168,15 +179,16 @@ public class SqsMessageListenerInitializer {
     }
 
     private boolean isSqsListenerEnabled(final String statusPropertyName) {
-        final Boolean enabled = environment.getProperty(statusPropertyName, Boolean.class);
+        final var enabled = environment.getProperty(statusPropertyName, Boolean.class);
 
         return enabled == null || enabled;
     }
 
     private ExecutorService createExecutorService(final int fixedThreadPoolSize) {
         synchronized (this) {
-            final LimitedQueue<Runnable> runnables = new LimitedQueue<>(1000);
-            final ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(fixedThreadPoolSize, fixedThreadPoolSize,
+            final var runnables = new LimitedQueue<Runnable>(1000);
+            final var threadPoolExecutor = new ThreadPoolExecutor(fixedThreadPoolSize,
+                    fixedThreadPoolSize,
                     60L, TimeUnit.SECONDS,
                     runnables, new LimitedQueue.LimitedQueueRejectedExecutionPolicy()){
                 @Override
@@ -234,7 +246,7 @@ public class SqsMessageListenerInitializer {
             numberOfListeners = getNumberOfListeners();
             this.semaphore = new Semaphore(numberOfListeners);
             this.sqsMessageListeners = new ArrayList<>();
-            this.sqsMessageListeners = IntStream.range(0, numberOfListeners).boxed().map(sqsMessageListenerFunc::apply).collect(Collectors.toList());
+            this.sqsMessageListeners = IntStream.range(0, numberOfListeners).boxed().map(sqsMessageListenerFunc).collect(Collectors.toList());
             this.lastCheckedTime = System.currentTimeMillis();
 
             synchronized (SqsMessageListenerWrapper.class) {
@@ -247,23 +259,26 @@ public class SqsMessageListenerInitializer {
 
         @Override
         public void receive() {
-            final long startTime = System.currentTimeMillis();
+            final var startTime = System.currentTimeMillis();
 
             if((startTime - lastCheckedTime) >= TEN_MINUTES_IN_MILLIS) {
                 checkForUpdates();
                 this.lastCheckedTime = startTime;
             }
-            Utils.executeUsingLock(lock.readLock(), () -> sqsMessageListeners.stream().map(this::submitJobToListener).forEach(this::waitForCompletion));
+            Utils.executeUsingLock(lock.readLock(), () -> sqsMessageListeners.stream().map(this::submitJobToListener)
+                    .forEach(this::waitForCompletion));
         }
 
         private void checkForUpdates() {
-            final int numberOfListeners = getNumberOfListeners();
+            final var numberOfListeners = getNumberOfListeners();
 
             if(numberOfListeners != sqsMessageListeners.size()) {
-                LOGGER.info("Number of listeners have changed for {} from {} to {}", this.listenerName, this.sqsMessageListeners.size(), numberOfListeners);
+                LOGGER.info("Number of listeners have changed for {} from {} to {}", this.listenerName,
+                        this.sqsMessageListeners.size(), numberOfListeners);
 
                 Utils.executeUsingLock(lock.writeLock(), () -> {
-                    this.sqsMessageListeners = IntStream.range(0, numberOfListeners).boxed().map(sqsMessageListenerFunc::apply).collect(Collectors.toList());
+                    this.sqsMessageListeners = IntStream.range(0, numberOfListeners).boxed().map(sqsMessageListenerFunc)
+                            .collect(Collectors.toList());
                     this.semaphore = new Semaphore(numberOfListeners);
 
                     synchronized (SqsMessageListenerWrapper.class) {
@@ -277,7 +292,8 @@ public class SqsMessageListenerInitializer {
         }
 
         private int getNumberOfListeners() {
-            return !StringUtils.isEmpty(numberOfListenersProperty) ? environment.getProperty(numberOfListenersProperty, Integer.class) : 1;
+            return !StringUtils.isEmpty(numberOfListenersProperty) ? environment.getProperty(numberOfListenersProperty,
+                    Integer.class) : 1;
         }
 
         public void waitForCompletion(final Tuple2<Boolean, Future<?>> future) {
@@ -298,7 +314,7 @@ public class SqsMessageListenerInitializer {
 
         public Tuple2<Boolean, Future<?>> submitJobToListener(final SqsMessageListener a) {
             try {
-                boolean lockAcquired = semaphore.tryAcquire(SEMAPHORE_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
+                var lockAcquired = semaphore.tryAcquire(SEMAPHORE_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
 
                 if(lockAcquired) {
                     return Tuple.of(true, executorService.submit(a::receive));
@@ -306,15 +322,16 @@ public class SqsMessageListenerInitializer {
                     return Tuple.of(false, CompletableFuture.completedFuture(null));
                 }
             } catch (final InterruptedException ex) {
-                return Utils.handleInterruptedException(ex, () -> Tuple.of(false, CompletableFuture.completedFuture(null)));
+                return Utils.handleInterruptedException(ex, () -> Tuple.of(false, CompletableFuture
+                        .completedFuture(null)));
             }
         }
     }
 
     public static void validate(final Object a) {
-        final Field[] fields = a.getClass().getDeclaredFields();
-        final Map<String, Object> errorMap = new HashMap<>();
-        final List<String> errorList = Arrays.stream(fields)
+        final var fields = a.getClass().getDeclaredFields();
+        final var errorMap = new HashMap<String, Object>();
+        final var errorList = Arrays.stream(fields)
                 .filter(field -> !Modifier.isStatic(field.getModifiers()))
                 .map(field -> Tuple.of(field, field.getAnnotation(NotNull.class)))
                 .filter(tuple -> tuple._2() != null)
@@ -363,16 +380,18 @@ public class SqsMessageListenerInitializer {
     }
 
     private static void logErrorMessageToConsole(final List<String> errorList) {
-        final AtomicInteger counter = new AtomicInteger(0);
+        final var counter = new AtomicInteger(0);
         System.err.println();
         System.err.println();
         System.err.println();
-        System.err.println("####################### ALL REQUIRED PROPERTIES NOT POPULATED - Stopping Application #######################");
+        System.err.println(
+                "####################### ALL REQUIRED PROPERTIES NOT POPULATED - Stopping Application #######################");
         System.err.println();
         System.err.println("Following fields not populated, Please add to configuration property/yaml file: ");
         errorList.forEach(a -> System.err.println(counter.incrementAndGet() + ": " + a));
         System.err.println();
-        System.err.println("####################### ALL REQUIRED PROPERTIES NOT POPULATED - Stopping Application #######################");
+        System.err.println(
+                "####################### ALL REQUIRED PROPERTIES NOT POPULATED - Stopping Application #######################");
         System.err.println();
         System.err.println();
         System.err.println();
