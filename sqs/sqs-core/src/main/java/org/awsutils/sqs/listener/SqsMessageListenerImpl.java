@@ -25,12 +25,10 @@ import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
-import java.lang.reflect.Proxy;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -66,7 +64,7 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
     private static final Thread SHUTDOWN_HOOK = new Thread();
 
 
-    private SqsMessageListenerImpl(final String queueUrl,
+    SqsMessageListenerImpl(final String queueUrl,
                                    final SqsClient sqsSyncClient,
                                    final MessageHandlerFactory messageHandlerFactory,
                                    final SyncSqsMessageClient syncSqsMessageClient,
@@ -342,138 +340,5 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
 
     static SqsMessageListener.Builder builder() {
         return new SqsMessageListenerBuilder();
-    }
-
-    private static class SqsMessageListenerBuilder implements SqsMessageListener.Builder {
-        private MessageHandlerFactory messageHandlerFactory;
-        private ExecutorService executorService;
-        private String maximumNumberOfMessagesKey;
-        private Function<String, Integer> propertyReaderFunction;
-        private WorkerNodeCheckFunc workerNodeCheck;
-        private Semaphore semaphore;
-        private String listenerName;
-        private String rateLimiterName;
-        private String messageHandlerRateLimiter;
-        private String statusProperty;
-        private Integer waitTimeInSeconds;
-        private String queueUrl;
-
-        private SqsClient sqsSyncClient;
-
-        private SyncSqsMessageClient syncSqsMessageClient;
-
-        @Override
-        public Builder queueUrl(final String queueUrl) {
-            this.queueUrl = queueUrl;
-            return this;
-        }
-
-        @Override
-        public Builder messageHandlerFactory(final MessageHandlerFactory messageHandlerFactory) {
-            this.messageHandlerFactory = messageHandlerFactory;
-            return this;
-        }
-
-        @Override
-        public Builder executorService(final ExecutorService executorService) {
-            this.executorService = executorService;
-            return this;
-        }
-
-        @Override
-        public Builder maximumNumberOfMessagesKey(final String maximumNumberOfMessagesKey) {
-            this.maximumNumberOfMessagesKey = maximumNumberOfMessagesKey;
-            return this;
-        }
-
-        @Override
-        public Builder propertyReaderFunction(final Function<String, Integer> propertyReaderFunction) {
-            this.propertyReaderFunction = propertyReaderFunction;
-            return this;
-        }
-
-        @Override
-        public Builder workerNodeCheck(final WorkerNodeCheckFunc workerNodeCheck) {
-            this.workerNodeCheck = workerNodeCheck;
-
-            return this;
-        }
-
-        @Override
-        public Builder semaphore(final Semaphore semaphore) {
-            this.semaphore = semaphore;
-
-            return this;
-        }
-
-        @Override
-        public Builder listenerName(final String listenerName) {
-            this.listenerName = listenerName;
-
-            return this;
-        }
-
-        @Override
-        public Builder rateLimiterName(final String rateLimiterName) {
-            this.rateLimiterName = rateLimiterName;
-
-            return this;
-        }
-
-        @Override
-        public Builder messageHandlerRateLimiter(final String messageHandlerRateLimiter) {
-            this.messageHandlerRateLimiter = messageHandlerRateLimiter;
-
-            return this;
-        }
-
-        @Override
-        public Builder statusProperty(final String enabled) {
-            this.statusProperty = enabled;
-
-            return this;
-        }
-
-        @Override
-        public Builder waitTimeInSeconds(final Integer waitTimeInSeconds) {
-            this.waitTimeInSeconds = waitTimeInSeconds;
-
-            return this;
-        }
-
-        @Override
-        public Builder sqsSyncClient(SqsClient sqsSyncClient) {
-            this.sqsSyncClient = sqsSyncClient;
-
-            return this;
-        }
-
-        @Override
-        public Builder syncSqsMessageClient(SyncSqsMessageClient syncSqsMessageClient) {
-            this.syncSqsMessageClient = syncSqsMessageClient;
-
-            return this;
-        }
-
-        @Override
-        public SqsMessageListener build() {
-            final SqsMessageListenerImpl sqsMessageListener = new SqsMessageListenerImpl(
-                    queueUrl, sqsSyncClient,
-                    messageHandlerFactory,
-                    syncSqsMessageClient, executorService,
-                    rateLimiterName,
-                    maximumNumberOfMessagesKey,
-                    semaphore,
-                    propertyReaderFunction,
-                    workerNodeCheck,
-                    !StringUtils.hasLength(listenerName) ? UUID.randomUUID().toString() : listenerName.trim(),
-                    messageHandlerRateLimiter,
-                    statusProperty,
-                    waitTimeInSeconds
-            );
-
-            return (SqsMessageListener) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{SqsMessageListener.class},
-                    (proxy, method, args) -> method.invoke(sqsMessageListener, args));
-        }
     }
 }
