@@ -183,9 +183,8 @@ public class SqsMessageListenerInitializer {
     }
 
     private Integer getLongPollingInterval(SqsMessageListenerProperties sqsMessageListenerProperties) {
-        Integer waitTimeInSeconds = sqsMessageListenerProperties.getWaitTimeInSeconds();
-
-        int waitTime = waitTimeInSeconds != null && waitTimeInSeconds > 0 ? waitTimeInSeconds :
+        var waitTimeInSeconds = sqsMessageListenerProperties.getWaitTimeInSeconds();
+        var waitTime = waitTimeInSeconds != null && waitTimeInSeconds > 0 ? waitTimeInSeconds :
                 DEFAULT_WAIT_TIME_IN_SECONDS;
 
         return (waitTime * 1000L) < awsEnvironmentProperties.getConnectionTimeout().toMillis() ?
