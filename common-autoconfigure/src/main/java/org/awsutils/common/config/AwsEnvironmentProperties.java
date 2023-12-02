@@ -16,9 +16,9 @@ public class AwsEnvironmentProperties implements IAwsEnvironmentProperties {
     private int maxConcurrency = 100;
     private boolean localAwsMode = false;
     private String localAwsEndpoint;
-    private Duration connectionTimeout = Duration.ofSeconds(5);
+    private Duration connectionTimeout = Duration.ofMillis(10500);
     private Duration connectionMaxIdleTime = Duration.ofSeconds(5);
-    private Duration connectionAcquisitionTimeout = Duration.ofSeconds(5);
+    private Duration connectionAcquisitionTimeout = Duration.ofMillis(10500);
     private Duration connectionTimeToLive = Duration.ofSeconds(5);
     private Boolean expectContinueEnabled;
 }

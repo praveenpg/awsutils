@@ -7,6 +7,7 @@ import jakarta.annotation.PreDestroy;
 import jakarta.validation.ValidationException;
 import jakarta.validation.constraints.NotNull;
 import org.apache.commons.lang3.StringUtils;
+import org.awsutils.common.config.AwsEnvironmentProperties;
 import org.awsutils.common.util.LimitedQueue;
 import org.awsutils.common.util.Utils;
 import org.awsutils.sqs.client.SyncSqsMessageClient;
@@ -72,6 +73,8 @@ public class SqsMessageListenerInitializer {
     @Autowired(required = false)
     private WorkerNodeCheckFunc workerNodeCheckFunc;
 
+    private final AwsEnvironmentProperties awsEnvironmentProperties;
+
     private static final String SQS_MESSAGE_LISTENER_KEY = "sqsMessageListener_{0}";
 
 
@@ -83,7 +86,7 @@ public class SqsMessageListenerInitializer {
                                          final SyncSqsMessageClient syncSqsMessageClient,
                                          final SqsClient sqsSyncClient,
                                          final SqsListenerScheduleConfig schedulingConfigurer,
-                                         final Environment environment) {
+                                         final Environment environment, AwsEnvironmentProperties awsEnvironmentProperties) {
 
         this.sqsMessageListenerListProperties = sqsMessageListenerListProperties;
         this.sqsCommonProperties = sqsCommonProperties;
@@ -94,6 +97,7 @@ public class SqsMessageListenerInitializer {
         this.sqsSyncClient = sqsSyncClient;
         this.schedulingConfigurer = schedulingConfigurer;
         this.environment = environment;
+        this.awsEnvironmentProperties = awsEnvironmentProperties;
     }
 
     @PostConstruct
@@ -176,6 +180,16 @@ public class SqsMessageListenerInitializer {
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Integer getLongPollingInterval(SqsMessageListenerProperties sqsMessageListenerProperties) {
+        Integer waitTimeInSeconds = sqsMessageListenerProperties.getWaitTimeInSeconds();
+
+        int waitTime = waitTimeInSeconds != null && waitTimeInSeconds > 0 ? waitTimeInSeconds :
+                DEFAULT_WAIT_TIME_IN_SECONDS;
+
+        return (waitTime * 1000L) < awsEnvironmentProperties.getConnectionTimeout().toMillis() ?
+                waitTime : (int) ((awsEnvironmentProperties.getConnectionTimeout().toMillis() - 100)/1000L);
     }
 
     private boolean isSqsListenerEnabled(final String statusPropertyName) {

@@ -327,15 +327,14 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
 
 
     private List<Message> receiveMessages() {
-        final var request = ReceiveMessageRequest.builder()
+
+        return sqsSyncClient.receiveMessage(ReceiveMessageRequest.builder()
                 .queueUrl(queueUrl)
                 .attributeNames(QueueAttributeName.ALL)
                 .messageAttributeNames("All")
                 .maxNumberOfMessages(MAX_NUMBER_OF_SQS_MESSAGES)
                 .waitTimeSeconds(waitTimeInSeconds)
-                .build();
-
-        return sqsSyncClient.receiveMessage(request).messages();
+                .build()).messages();
     }
 
     static SqsMessageListener.Builder builder() {
