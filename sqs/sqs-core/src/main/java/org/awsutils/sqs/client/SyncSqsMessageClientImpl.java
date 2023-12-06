@@ -81,7 +81,7 @@ public final class SyncSqsMessageClientImpl
     }
 
     @Override
-    public GetQueueUrlResponse getQueueUrl(String queueName) {
+    public GetQueueUrlResponse getQueueUrl(final String queueName) {
         return super.getQueueUrl(queueName, sqsSyncClient::getQueueUrl);
     }
 }
