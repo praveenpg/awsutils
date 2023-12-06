@@ -70,6 +70,7 @@ public final class SyncSqsMessageClientImpl
     @Override
     public DeleteMessageResponse deleteMessage(final String queueUrl,
                                                final String receiptHandle) {
+
         return deleteMessage(queueUrl, receiptHandle, sqsSyncClient::deleteMessage);
     }
 
@@ -77,11 +78,13 @@ public final class SyncSqsMessageClientImpl
     public ChangeMessageVisibilityResponse changeVisibility(final String queueUrl,
                                                             final String receiptHandle,
                                                             final Integer visibilityTimeout) {
+
         return changeVisibility(queueUrl, receiptHandle, visibilityTimeout, sqsSyncClient::changeMessageVisibility);
     }
 
     @Override
     public GetQueueUrlResponse getQueueUrl(final String queueName) {
+
         return super.getQueueUrl(queueName, sqsSyncClient::getQueueUrl);
     }
 }
