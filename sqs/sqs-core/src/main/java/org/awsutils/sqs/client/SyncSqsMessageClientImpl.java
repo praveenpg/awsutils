@@ -13,22 +13,13 @@ public final class SyncSqsMessageClientImpl
         extends AbstractSqsMessageClient<SendMessageResponse,
         SendMessageBatchResponse,
         DeleteMessageResponse,
-        ChangeMessageVisibilityResponse> implements SyncSqsMessageClient {
+        ChangeMessageVisibilityResponse, GetQueueUrlResponse> implements SyncSqsMessageClient {
     private final SqsClient sqsSyncClient;
 
     public SyncSqsMessageClientImpl(final SqsClient sqsClient) {
         this.sqsSyncClient = sqsClient;
     }
 
-    @Override
-    protected String queueUrl(final String queueName) {
-        final GetQueueUrlRequest queueUrlRequest = GetQueueUrlRequest.builder()
-                .queueName(queueName)
-                .build();
-        final GetQueueUrlResponse queueUrlResponse = sqsSyncClient.getQueueUrl(queueUrlRequest);
-
-        return queueUrlResponse.queueUrl();
-    }
 
     @Override
     public <T> SendMessageResponse sendMessage(final SqsMessage<T> sqsMessage,
@@ -87,5 +78,10 @@ public final class SyncSqsMessageClientImpl
                                                             final String receiptHandle,
                                                             final Integer visibilityTimeout) {
         return changeVisibility(queueUrl, receiptHandle, visibilityTimeout, sqsSyncClient::changeMessageVisibility);
+    }
+
+    @Override
+    public GetQueueUrlResponse getQueueUrl(String queueName) {
+        return super.getQueueUrl(queueName, sqsSyncClient::getQueueUrl);
     }
 }

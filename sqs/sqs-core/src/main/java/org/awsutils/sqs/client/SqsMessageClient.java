@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public interface SqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, DELETE_MSG_RESP_TYPE, CHANGE_VSB_RESP_TYPE> {
+public interface SqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, DELETE_MSG_RESP_TYPE, CHANGE_VSB_RESP_TYPE, GET_QUEUE_URL_RESPONSE> {
     default <T> SEND_MSG_RESP_TYPE sendMessage(final T message, String messageType, String transactionId, final String queueName) {
         return sendMessage(message, messageType, transactionId, queueName,  BigInteger.ZERO.intValue(), Collections.emptyMap());
     }
@@ -56,8 +56,6 @@ public interface SqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, 
 
     <T> SEND_BATCH_MSG_RESP_TYPE sendMessage(List<SqsMessage<T>> sqsMessages, String queueName, Integer delayInSeconds, Map<String, String> attMap);
 
-    String getQueueUrl(String queueName);
-
     DELETE_MSG_RESP_TYPE deleteMessage(String queueUrl, String receiptHandle);
 
     CHANGE_VSB_RESP_TYPE changeVisibility(String queueUrl, String receiptHandle, Integer visibilityTimeout);
@@ -65,4 +63,6 @@ public interface SqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, 
     default <T> SEND_BATCH_MSG_RESP_TYPE sendMessage(final SqsBatchMessage<T> sqsBatchMessage, final String queueName, final Integer delayInSeconds, Map<String, String> attMap) {
         return sendMessage(sqsBatchMessage.sqsMessages(), queueName, delayInSeconds, attMap);
     }
+
+    GET_QUEUE_URL_RESPONSE getQueueUrl(String queueName);
 }

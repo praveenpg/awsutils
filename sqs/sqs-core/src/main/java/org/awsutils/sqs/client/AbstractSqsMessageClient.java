@@ -10,7 +10,6 @@ import software.amazon.awssdk.services.sqs.model.*;
 
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -18,10 +17,9 @@ import java.util.stream.Collectors;
 import static org.awsutils.sqs.client.MessageConstants.SQS_MESSAGE_WRAPPER_PRESENT;
 
 @Slf4j
-abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, DELETE_MSG_RESP_TYPE, CHANGE_VSB_RESP_TYPE>
-        implements SqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, DELETE_MSG_RESP_TYPE, CHANGE_VSB_RESP_TYPE>
+abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, DELETE_MSG_RESP_TYPE, CHANGE_VSB_RESP_TYPE, GET_QUEUE_URL_RESPONSE>
+        implements SqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, DELETE_MSG_RESP_TYPE, CHANGE_VSB_RESP_TYPE, GET_QUEUE_URL_RESPONSE>
         permits SyncSqsMessageClientImpl, AsyncSqsMessageClientImpl {
-    private final ConcurrentHashMap<String, String> queueUrlMap = new ConcurrentHashMap<>();
 
     <T> SendMessageRequest.Builder getSendMessageRequestBuilder(final T sqsMessage,
                                                                 final String messageType,
@@ -248,6 +246,14 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
         return function.apply(request);
     }
 
+    protected GET_QUEUE_URL_RESPONSE getQueueUrl(final String queueName, final Function<GetQueueUrlRequest, GET_QUEUE_URL_RESPONSE> func) {
+        final GetQueueUrlRequest queueUrlRequest = GetQueueUrlRequest.builder()
+                .queueName(queueName)
+                .build();
+
+        return func.apply(queueUrlRequest);
+    }
+
 
     protected <T> SendMessageResponse logSqsSendResponse(final SqsMessage<T> sqsMessage,
                                                final String queueName,
@@ -275,12 +281,4 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
 
         return response;
     }
-
-
-    @Override
-    public String getQueueUrl(final String queueName) {
-        return queueUrlMap.computeIfAbsent(queueName, s -> queueUrl(queueName));
-    }
-
-    protected abstract String queueUrl(String queueName);
 }

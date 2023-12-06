@@ -1,46 +1,29 @@
 package org.awsutils.sqs.client;
 
 import lombok.extern.slf4j.Slf4j;
-import org.awsutils.common.exceptions.UtilsException;
 import org.awsutils.sqs.message.SqsMessage;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
-import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 @Slf4j
 public final class AsyncSqsMessageClientImpl extends AbstractSqsMessageClient<CompletableFuture<SendMessageResponse>,
         CompletableFuture<SendMessageBatchResponse>,
         CompletableFuture<DeleteMessageResponse>,
-        CompletableFuture<ChangeMessageVisibilityResponse>> implements AsyncSqsMessageClient {
+        CompletableFuture<ChangeMessageVisibilityResponse>, CompletableFuture<GetQueueUrlResponse>> implements AsyncSqsMessageClient {
     private final SqsAsyncClient sqsAsyncClient;
 
     public AsyncSqsMessageClientImpl(SqsAsyncClient sqsAsyncClient) {
         this.sqsAsyncClient = sqsAsyncClient;
     }
 
-
     @Override
-    protected String queueUrl(final String queueName) {
-        try {
-            final GetQueueUrlRequest queueUrlRequest = GetQueueUrlRequest.builder()
-                    .queueName(queueName)
-                    .build();
-            final CompletableFuture<GetQueueUrlResponse> queueUrlResponseFut = sqsAsyncClient.getQueueUrl(queueUrlRequest);
-            final GetQueueUrlResponse queueUrlResponse = queueUrlResponseFut.get();
+    public CompletableFuture<GetQueueUrlResponse> getQueueUrl(final String queueName) {
 
-            return queueUrlResponse.queueUrl();
-        } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new UtilsException("UNKNOWN_ERROR", e);
-        } catch (final ExecutionException e) {
-            log.error("Exception while getting queueUrl [ " + queueName + "]: " + e, e.getCause());
-            throw new UtilsException("UNKNOWN_ERROR", MessageFormat.format("Exception while getting queueUrl [ {0}]: ", queueName), e.getCause());
-        }
+        return super.getQueueUrl(queueName, sqsAsyncClient::getQueueUrl);
     }
 
     @Override
