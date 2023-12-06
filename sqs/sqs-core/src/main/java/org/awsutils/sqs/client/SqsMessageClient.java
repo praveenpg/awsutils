@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public interface SqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, DELETE_MSG_RESP_TYPE, CHANGE_VSB_RESP_TYPE, GET_QUEUE_URL_RESPONSE> {
     default <T> SEND_MSG_RESP_TYPE sendMessage(final T message, String messageType, String transactionId, final String queueName) {
         return sendMessage(message, messageType, transactionId, queueName,  BigInteger.ZERO.intValue(), Collections.emptyMap());

@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 final class SqsMessageListenerImpl implements SqsMessageListener {
     @SuppressWarnings("FieldCanBeLocal")
     private final Environment environment;
-    private String queueUrl;
+    private final String queueUrl;
     private final SqsClient sqsSyncClient;
     private final MessageHandlerFactory messageHandlerFactory;
     private final SyncSqsMessageClient syncSqsMessageClient;
