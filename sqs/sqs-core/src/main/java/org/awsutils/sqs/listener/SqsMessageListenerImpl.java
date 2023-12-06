@@ -108,18 +108,6 @@ final class SqsMessageListenerImpl implements SqsMessageListener {
         timer.schedule(new DefaultTimerTask(this::setRateLimiters), 10000);
     }
 
-    private String getQueueUrl(final SyncSqsMessageClient sqsMessageClient, final String queueName) {
-        if (!StringUtils.hasLength(this.queueUrl)) {
-            synchronized (this) {
-                if (!StringUtils.hasLength(this.queueUrl)) {
-                    this.queueUrl = sqsMessageClient.getQueueUrl(queueName);
-                }
-            }
-        }
-
-        return this.queueUrl;
-    }
-
     public void receive() {
         try {
             if (listenerEnabled && workerNodeCheck.check()) {

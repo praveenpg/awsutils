@@ -10,7 +10,6 @@ import software.amazon.awssdk.services.sqs.model.*;
 
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -27,13 +26,13 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
     <T> SendMessageRequest.Builder getSendMessageRequestBuilder(final T sqsMessage,
                                                                 final String messageType,
                                                                 final String transactionId,
-                                                                final String queueName,
+                                                                final String queueUrl,
                                                                 final Integer delayInSeconds,
                                                                 final Map<String, String> messageAttMap) {
 
         final String finalMessage = sqsMessage instanceof String str ? str : Utils.constructJson(sqsMessage);
         final SendMessageRequest.Builder sendMessageRequestBuilder = SendMessageRequest.builder()
-                .messageBody(finalMessage).delaySeconds(delayInSeconds).queueUrl(getQueueUrl(queueName));
+                .messageBody(finalMessage).delaySeconds(delayInSeconds).queueUrl(queueUrl);
         final Map<String, String> finalMessageAttributes = !CollectionUtils.isEmpty(messageAttMap) ?
                 new HashMap<>(messageAttMap) : new HashMap<>();
 
@@ -43,7 +42,7 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
                 getSqsMessageAttributes(finalMessageAttributes)));
 
         if (log.isInfoEnabled()) {
-            log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}", getQueueUrl(queueName),
+            log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}", queueUrl,
                     sqsMessage));
         }
 
@@ -64,7 +63,7 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
     }
 
 
-    <T> SEND_BATCH_MSG_RESP_TYPE sendMessage(final List<SqsMessage<T>> sqsMessages, final String queueName,
+    <T> SEND_BATCH_MSG_RESP_TYPE sendMessage(final List<SqsMessage<T>> sqsMessages, final String queueUrl,
                                              final Integer delayInSeconds,
                                              final Map<String, String> attMap,
                                              final Function<SendMessageBatchRequest, SEND_BATCH_MSG_RESP_TYPE> function) {
@@ -72,7 +71,6 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
         return validateAndSendMessage(sqsMessages, () -> {
             final Map<String, MessageAttributeValue> attributeValueMap = getSqsMessageAttributes(
                     constructFinalMessageAttributeMap(sqsMessages.get(0), attMap));
-            final String queueUrl = getQueueUrl(queueName);
             final Set<String> uniqueTransactionIds = sqsMessages.stream().map(SqsMessage::getTransactionId)
                     .filter(StringUtils::hasLength).collect(Collectors.toSet());
             final boolean areTransactionIdsUnique = !CollectionUtils.isEmpty(uniqueTransactionIds)
@@ -113,12 +111,12 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
     }
 
     private <T> SendMessageRequest.Builder getSendMessageRequestBuilder(final SqsMessage<T> sqsMessage,
-                                                                final String queueName,
+                                                                final String queueUrl,
                                                                 final Integer delayInSeconds,
                                                                 final Map<String, String> messageAttMap) {
 
         final SendMessageRequest.Builder sendMessageRequestBuilder = SendMessageRequest.builder().messageBody(
-                Utils.constructJson(sqsMessage)).delaySeconds(delayInSeconds).queueUrl(getQueueUrl(queueName));
+                Utils.constructJson(sqsMessage)).delaySeconds(delayInSeconds).queueUrl(queueUrl);
         final Map<String, String> finalMessageAttributes = !CollectionUtils.isEmpty(messageAttMap) ?
                 new HashMap<>(messageAttMap) : new HashMap<>();
 
@@ -129,7 +127,7 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
 
         if (log.isInfoEnabled()) {
             log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}",
-                    getQueueUrl(queueName), sqsMessage));
+                    queueUrl, sqsMessage));
         }
         return sendMessageRequestBuilder;
     }
@@ -198,7 +196,7 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
     protected <T> SEND_BATCH_MSG_RESP_TYPE sendMessage(final List<T> sqsMessages,
                                              final String messageType,
                                              final String transactionId,
-                                             final String queueName,
+                                             final String queueUrl,
                                              final Integer delayInSeconds,
                                              final Map<String, String> attMap,
                                              final Function<SendMessageBatchRequest, SEND_BATCH_MSG_RESP_TYPE> function) {
@@ -206,7 +204,6 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
         return validateAndSendMessage(sqsMessages, () -> {
             final Map<String, MessageAttributeValue> attributeValueMap = getSqsMessageAttributes(
                     constructFinalMessageAttributeMap(transactionId, messageType, attMap));
-            final String queueUrl = getQueueUrl(queueName);
             final SendMessageBatchRequest request = SendMessageBatchRequest.builder().entries(sqsMessages
                     .stream().map(sqsMessage -> SendMessageBatchRequestEntry.builder().id(
                                     StringUtils.hasLength(transactionId) ? transactionId : UUID.randomUUID().toString()).messageBody(
