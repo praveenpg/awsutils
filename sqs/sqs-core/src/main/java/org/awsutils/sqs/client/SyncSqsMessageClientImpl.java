@@ -27,7 +27,7 @@ public final class SyncSqsMessageClientImpl
                                                final Integer delayInSeconds,
                                                final Map<String, String> messageAttMap) {
 
-        return sendSingleMessage(sqsMessage, queueName, delayInSeconds, messageAttMap, msgRequest ->
+        return super.sendSingleMessage(sqsMessage, queueName, delayInSeconds, messageAttMap, msgRequest ->
                 logSqsSendResponse(sqsMessage, queueName, delayInSeconds, sqsSyncClient.sendMessage(msgRequest)));
     }
 
@@ -39,7 +39,7 @@ public final class SyncSqsMessageClientImpl
                                                final Integer delayInSeconds,
                                                final Map<String, String> messageAttMap) {
 
-        return sendSingleMessage(sqsMessage, messageType, transactionId, queueName, delayInSeconds, messageAttMap,
+        return super.sendSingleMessage(sqsMessage, messageType, transactionId, queueName, delayInSeconds, messageAttMap,
                 msgRequest ->
                         logSqsSendResponse(sqsMessage, messageType, queueName, delayInSeconds,
                                 sqsSyncClient.sendMessage(msgRequest)));
@@ -53,7 +53,7 @@ public final class SyncSqsMessageClientImpl
                                                     final Integer delayInSeconds,
                                                     final Map<String, String> attMap) {
 
-        return sendMessage(sqsMessages, messageType, transactionId, queueName, delayInSeconds, attMap,
+        return super.sendMessage(sqsMessages, messageType, transactionId, queueName, delayInSeconds, attMap,
                 sqsSyncClient::sendMessageBatch);
     }
 
@@ -63,7 +63,7 @@ public final class SyncSqsMessageClientImpl
                                                     final Integer delayInSeconds,
                                                     final Map<String, String> attMap) {
 
-        return validateAndSendMessage(sqsMessages, () ->
+        return super.validateAndSendMessage(sqsMessages, () ->
                 sendMessage(sqsMessages, queueName, delayInSeconds, attMap, sqsSyncClient::sendMessageBatch));
     }
 
@@ -71,7 +71,7 @@ public final class SyncSqsMessageClientImpl
     public DeleteMessageResponse deleteMessage(final String queueUrl,
                                                final String receiptHandle) {
 
-        return deleteMessage(queueUrl, receiptHandle, sqsSyncClient::deleteMessage);
+        return super.deleteMessage(queueUrl, receiptHandle, sqsSyncClient::deleteMessage);
     }
 
     @Override
@@ -79,7 +79,7 @@ public final class SyncSqsMessageClientImpl
                                                             final String receiptHandle,
                                                             final Integer visibilityTimeout) {
 
-        return changeVisibility(queueUrl, receiptHandle, visibilityTimeout, sqsSyncClient::changeMessageVisibility);
+        return super.changeVisibility(queueUrl, receiptHandle, visibilityTimeout, sqsSyncClient::changeMessageVisibility);
     }
 
     @Override
