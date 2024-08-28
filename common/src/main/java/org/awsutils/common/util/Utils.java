@@ -28,7 +28,8 @@ import java.util.stream.IntStream;
 public class Utils {
     private static final int VISIBILITY_TIMEOUT = 60;
     private static final Long MAX_RETRY_INTERVAL_IN_SECONDS_VAL = 30L;
-    private static final Long MAX_RETRY_INTERVAL_IN_SECONDS = TimeUnit.MINUTES.toSeconds(MAX_RETRY_INTERVAL_IN_SECONDS_VAL);
+    private static final Long MAX_RETRY_INTERVAL_IN_SECONDS = TimeUnit.MINUTES
+            .toSeconds(MAX_RETRY_INTERVAL_IN_SECONDS_VAL);
     private static final int MAXIMUM_NO_OF_RETRIES = 5;
 
     private static final int VISIBILITY_TIMEOUT_MULTIPLICATION_FACTOR = 2;
@@ -41,9 +42,13 @@ public class Utils {
         return constructListFromJson(paramType, json, e -> new RuntimeException("Invalid Json", e));
     }
 
-    public static <X> List<X> constructListFromJson(Class<X> paramType, final String json, final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
+    public static <X> List<X> constructListFromJson(
+            Class<X> paramType,
+            final String json, final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
+
         try {
-            return OBJECT_MAPPER.readValue(json, OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, paramType));
+            return OBJECT_MAPPER.readValue(json, OBJECT_MAPPER.getTypeFactory()
+                    .constructCollectionType(List.class, paramType));
         } catch (IOException e) {
             throw exceptionFunc.apply(e);
         }
@@ -53,7 +58,9 @@ public class Utils {
         return constructFromJson(clazz, json, e -> new RuntimeException("Invalid Json", e));
     }
 
-    public static <T> T constructFromJson(final Class<T> clazz, final String json, final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
+    public static <T> T constructFromJson(final Class<T> clazz,
+                                          final String json,
+                                          final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
         try {
             return OBJECT_MAPPER.readValue(json, clazz);
         } catch (final IOException e) {
@@ -65,7 +72,8 @@ public class Utils {
         return constructJson(message, e -> new RuntimeException("Error while constructing json", e));
     }
 
-    public static <T> String constructJson(final T message, final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
+    public static <T> String constructJson(final T message,
+                                           final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
         try {
             return OBJECT_MAPPER.writeValueAsString(message);
         } catch (final JsonProcessingException e) {
@@ -86,7 +94,8 @@ public class Utils {
     }
 
     public static <T, R> List<R> convertToList(final T obj1, final Class<R> type, final ObjectMapper mapper) {
-        return OBJECT_MAPPER.convertValue(obj1, OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, type));
+        return OBJECT_MAPPER.convertValue(obj1, OBJECT_MAPPER.getTypeFactory()
+                .constructCollectionType(List.class, type));
     }
 
     public static <T> T constructObject(final Class<T> clazz) {
@@ -159,10 +168,12 @@ public class Utils {
         final int visibilityTimeoutInSeconds;
 
         if(retryNumber <= MAXIMUM_NO_OF_RETRIES) {
-            visibilityTimeoutInSeconds = VISIBILITY_TIMEOUT * (int)Math.pow(VISIBILITY_TIMEOUT_MULTIPLICATION_FACTOR, retryNumber > 0 ?
+            visibilityTimeoutInSeconds = VISIBILITY_TIMEOUT *
+                    (int)Math.pow(VISIBILITY_TIMEOUT_MULTIPLICATION_FACTOR, retryNumber > 0 ?
                     (retryNumber - 1) : retryNumber);
         } else {
-            visibilityTimeoutInSeconds = VISIBILITY_TIMEOUT * (int)Math.pow(VISIBILITY_TIMEOUT_MULTIPLICATION_FACTOR, MAXIMUM_NO_OF_RETRIES);
+            visibilityTimeoutInSeconds = VISIBILITY_TIMEOUT *
+                    (int)Math.pow(VISIBILITY_TIMEOUT_MULTIPLICATION_FACTOR, MAXIMUM_NO_OF_RETRIES);
         }
 
         return (visibilityTimeoutInSeconds > MAX_RETRY_INTERVAL_IN_SECONDS) ? MAX_RETRY_INTERVAL_IN_SECONDS.intValue()
@@ -185,7 +196,9 @@ public class Utils {
         return getConstructor(clazz, e -> {}, params);
     }
 
-    public static <T> Constructor<T> getConstructor(final Class<T> clazz, final Consumer<? super Exception> errorHandleFunc, final Class<?>... params) {
+    public static <T> Constructor<T> getConstructor(
+            final Class<T> clazz, final Consumer<? super Exception> errorHandleFunc, final Class<?>... params) {
+
         try {
             final Constructor<T> constructor = clazz.getDeclaredConstructor(params);
 
@@ -257,7 +270,12 @@ public class Utils {
         });
     }
 
-    public static void executeUsingSemaphore(final Semaphore semaphore, final long timeout, final TimeUnit timeUnit, final Runnable function) throws InterruptedException {
+    public static void executeUsingSemaphore(
+            final Semaphore semaphore,
+            final long timeout,
+            final TimeUnit timeUnit,
+            final Runnable function) throws InterruptedException {
+
         final boolean lockAcquired = semaphore.tryAcquire(timeout, timeUnit);
 
         try {
@@ -272,10 +290,14 @@ public class Utils {
     }
 
     public static void executeUsingSemaphore(final Semaphore semaphore, final Runnable function) {
-        executeUsingSemaphore(semaphore, function, e -> new UtilsException("UNKNOWN_ERROR, Error when executing method: ", e));
+        executeUsingSemaphore(semaphore, function,
+                e -> new UtilsException("UNKNOWN_ERROR, Error when executing method: ", e));
     }
 
-    public static void executeUsingSemaphore(final Semaphore semaphore, final Runnable function, final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
+    public static void executeUsingSemaphore(
+            final Semaphore semaphore,
+            final Runnable function,
+            final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
 
         try {
             semaphore.acquire();
@@ -288,11 +310,23 @@ public class Utils {
         }
     }
 
-    public static <T> T executeUsingSemaphore(final Semaphore semaphore, final long timeout, final TimeUnit timeUnit, final Supplier<T> function) throws InterruptedException {
-        return executeUsingSemaphore(semaphore, timeout, timeUnit, function, () -> new UtilsException("UNKNOWN_ERROR, Error when executing method: "));
+    public static <T> T executeUsingSemaphore(
+            final Semaphore semaphore,
+            final long timeout,
+            final TimeUnit timeUnit,
+            final Supplier<T> function) throws InterruptedException {
+
+        return executeUsingSemaphore(semaphore, timeout, timeUnit, function,
+                () -> new UtilsException("UNKNOWN_ERROR, Error when executing method: "));
     }
 
-    public static <T> T executeUsingSemaphore(final Semaphore semaphore, final long timeout, final TimeUnit timeUnit, final Supplier<T> function, final Supplier<? extends RuntimeException> exceptionFunc) throws InterruptedException {
+    public static <T> T executeUsingSemaphore(
+            final Semaphore semaphore,
+            final long timeout,
+            final TimeUnit timeUnit,
+            final Supplier<T> function, final Supplier<? extends RuntimeException> exceptionFunc)
+            throws InterruptedException {
+
         final boolean lockAcquired = semaphore.tryAcquire(timeout, timeUnit);
 
         try {
@@ -309,10 +343,14 @@ public class Utils {
     }
 
     public static <T> T executeUsingSemaphore(final Semaphore semaphore, final Supplier<T> function) {
-        return executeUsingSemaphore(semaphore, function, e -> new UtilsException("UNKNOWN_ERROR, Error when executing function: " + e, e));
+        return executeUsingSemaphore(semaphore, function,
+                e -> new UtilsException("UNKNOWN_ERROR, Error when executing function: " + e, e));
     }
 
-    public static <T> T executeUsingSemaphore(final Semaphore semaphore, final Supplier<T> function, final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
+    public static <T> T executeUsingSemaphore(
+            final Semaphore semaphore,
+            final Supplier<T> function, final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
+
         try {
             semaphore.acquire();
 
@@ -322,6 +360,16 @@ public class Utils {
             throw exceptionFunc.apply(e);
         } finally {
             semaphore.release();
+        }
+    }
+
+    public static void executeFunctionWithNoReturn(
+            final Runnable function,
+            final Function<Throwable, ? extends RuntimeException> exceptionFunc) {
+        try {
+            function.run();
+        } catch (final Exception e) {
+            throw exceptionFunc.apply(e);
         }
     }
 }
