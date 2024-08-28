@@ -353,21 +353,6 @@ public class SqsMessageListenerInitializer {
                 .map(tuple -> tuple._1.message())
                 .toList();
 
-
-/*        for (final Field field : fields) {
-            if(!Modifier.isStatic(field.getModifiers())) {
-                final NotNull notNull = field.getAnnotation(NotNull.class);
-
-                if(notNull != null) {
-                    final Object value = getFieldValue(a, field);
-
-                    if(value == null) {
-                        errorList.add(notNull.message());
-                    }
-                }
-            }
-        }*/
-
         if(!CollectionUtils.isEmpty(errorList)) {
 
             errorMap.put("message", "Following fields have not been populated");
