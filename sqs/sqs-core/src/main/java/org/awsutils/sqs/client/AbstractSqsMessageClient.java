@@ -8,7 +8,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.sqs.model.*;
 
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -16,6 +15,7 @@ import java.util.stream.Collectors;
 
 import static org.awsutils.sqs.client.MessageConstants.SQS_MESSAGE_WRAPPER_PRESENT;
 
+@SuppressWarnings("LoggingSimilarMessage")
 @Slf4j
 abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, DELETE_MSG_RESP_TYPE, CHANGE_VSB_RESP_TYPE, GET_QUEUE_URL_RESPONSE>
         implements SqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MSG_RESP_TYPE, DELETE_MSG_RESP_TYPE, CHANGE_VSB_RESP_TYPE, GET_QUEUE_URL_RESPONSE>
@@ -40,8 +40,7 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
                 getSqsMessageAttributes(finalMessageAttributes)));
 
         if (log.isInfoEnabled()) {
-            log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}", queueUrl,
-                    sqsMessage));
+            log.info("Sending message to SQS [{}]: {}", queueUrl, sqsMessage);
         }
 
         return sendMessageRequestBuilder;
@@ -81,7 +80,7 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
                     .collect(Collectors.toList())).queueUrl(queueUrl).build();
 
             if (log.isDebugEnabled()) {
-                log.debug(MessageFormat.format("Sending messages to SQS[{0}] : {1}", queueUrl, sqsMessages));
+                log.debug("Sending messages to SQS[{}] : {}", queueUrl, sqsMessages);
             }
 
             return function.apply(request);
@@ -124,8 +123,7 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
                 getSqsMessageAttributes(finalMessageAttributes)));
 
         if (log.isInfoEnabled()) {
-            log.info(MessageFormat.format("Sending message to SQS [{0}]: {1}",
-                    queueUrl, sqsMessage));
+            log.info("Sending message to SQS [{}]: {}", queueUrl, sqsMessage);
         }
         return sendMessageRequestBuilder;
     }
@@ -211,7 +209,7 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
                     .collect(Collectors.toList())).queueUrl(queueUrl).build();
 
             if (log.isDebugEnabled()) {
-                log.debug(MessageFormat.format("Sending messages to SQS[{0}] : {1}", queueUrl, sqsMessages));
+                log.debug("Sending messages to SQS[{}] : {}", queueUrl, sqsMessages);
             }
 
             return function.apply(request);
@@ -225,8 +223,7 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
                 .receiptHandle(receiptHandle).build();
 
         if (log.isDebugEnabled()) {
-            log.debug(MessageFormat.format("Deleting message  from Queue: {0} with receiptHandle: {1}",
-                    queueUrl, receiptHandle));
+            log.debug("Deleting message  from Queue: {} with receiptHandle: {}", queueUrl, receiptHandle);
         }
         return function.apply(deleteMessageRequest);
     }
@@ -240,13 +237,14 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
                 .receiptHandle(receiptHandle).visibilityTimeout(visibilityTimeout).build();
 
         if (log.isDebugEnabled()) {
-            log.debug(MessageFormat.format("Changing visibility of [{0}] from queue: {1}", receiptHandle, queueUrl));
+            log.debug("Changing visibility of [{}] from queue: {}", receiptHandle, queueUrl);
         }
 
         return function.apply(request);
     }
 
-    protected GET_QUEUE_URL_RESPONSE getQueueUrl(final String queueName, final Function<GetQueueUrlRequest, GET_QUEUE_URL_RESPONSE> func) {
+    protected GET_QUEUE_URL_RESPONSE getQueueUrl(final String queueName, final Function<GetQueueUrlRequest,
+            GET_QUEUE_URL_RESPONSE> func) {
         final GetQueueUrlRequest queueUrlRequest = GetQueueUrlRequest.builder()
                 .queueName(queueName)
                 .build();
@@ -261,8 +259,8 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
                                                final SendMessageResponse response) {
 
         if (log.isDebugEnabled()) {
-            log.debug(MessageFormat.format("Sent message to {0}, message type: {1} w/ delay {2}",
-                    queueName, sqsMessage.getMessageType(), delayInSeconds));
+            log.debug("Sent message to {}, message type: {} w/ delay {}", queueName, sqsMessage.getMessageType(),
+                    delayInSeconds);
         }
 
         return response;
@@ -275,8 +273,7 @@ abstract sealed class AbstractSqsMessageClient<SEND_MSG_RESP_TYPE, SEND_BATCH_MS
                                                final SendMessageResponse response) {
 
         if (log.isDebugEnabled()) {
-            log.debug(MessageFormat.format("Sent message to {0}, message type: {1} w/ delay {2}",
-                    queueName, messageType, delayInSeconds));
+            log.debug("Sent message to {}, message type: {} w/ delay {}", queueName, messageType, delayInSeconds);
         }
 
         return response;

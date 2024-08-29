@@ -9,7 +9,6 @@ import jakarta.validation.constraints.NotNull;
 import org.apache.commons.lang3.StringUtils;
 import org.awsutils.common.config.AwsEnvironmentProperties;
 import org.awsutils.common.util.LimitedQueue;
-import org.awsutils.common.util.Utils;
 import org.awsutils.sqs.client.SyncSqsMessageClient;
 import org.awsutils.sqs.config.WorkerNodeCheckFunc;
 import org.awsutils.sqs.handler.MessageHandlerFactory;
@@ -32,13 +31,18 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.awsutils.common.util.Utils.*;
 
 @SuppressWarnings({"SpringFacetCodeInspection", "SpringJavaAutowiredFieldsWarningInspection", "unused", "ClassWithTooManyFields"})
 @Configuration
@@ -116,7 +120,7 @@ public class SqsMessageListenerInitializer {
     public void registerSqsListener(final BeanDefinitionRegistry registry, final String listenerKey,
                                     final SqsMessageListenerProperties sqsMessageListenerProperties) {
 
-        Utils.executeFunctionWithNoReturn(() -> {
+        executeFunctionWithNoReturn(() -> {
             final var definition = new GenericBeanDefinition();
             final var constructorArgumentValues = new ConstructorArgumentValues();
             final var listenerName = sqsMessageListenerProperties.getListenerName();
@@ -130,27 +134,10 @@ public class SqsMessageListenerInitializer {
                 () -> StringUtils.isEmpty(listenerEnabledProperty) || isSqsListenerEnabled(listenerEnabledProperty) :
                 () -> (StringUtils.isEmpty(listenerEnabledProperty) || isSqsListenerEnabled(listenerEnabledProperty))
                         && workerNodeCheckFunc.check();
-            final Function<Integer, SqsMessageListener> sqsMessageListenerFunc = c -> SqsMessageListener
-                .builder()
-                .sqsSyncClient(sqsSyncClient)
-                .messageHandlerFactory(messageHandlerFactory)
-                .executorService(sqsCommonProperties.isUseCommonThreadPool() ? commonExecutorService.executorService() :
-                        createExecutorService(sqsMessageListenerProperties.getThreadPoolSize()))
-                .rateLimiterName(!StringUtils.isEmpty(rateLimiterName) ? rateLimiterName : null)
-                .maximumNumberOfMessagesKey(sqsMessageListenerProperties.getMaximumNumberOfMessagesKey())
-                .semaphore(new Semaphore(1))
-                .propertyReaderFunction(propertyFunc)
-                .syncSqsMessageClient(syncSqsMessageClient)
-                .workerNodeCheck(finalWorkerNodeCheckFunc)
-                .listenerName(!StringUtils.isEmpty(listenerName) ? String.format("%s_%d", listenerName, c) :
-                        String.format("%s_%d", listenerKey, c))
-                .messageHandlerRateLimiter(!StringUtils.isEmpty(messageHandlerRateLimiterName) ?
-                        messageHandlerRateLimiterName : null)
-                .statusProperty(!StringUtils.isEmpty(listenerEnabledProperty) ? listenerEnabledProperty : null)
-                .waitTimeInSeconds(waitTimeInSeconds != null && waitTimeInSeconds > 0 ? waitTimeInSeconds :
-                        DEFAULT_WAIT_TIME_IN_SECONDS)
-                .queueUrl(sqsMessageListenerProperties.getQueueUrl())
-                .build();
+            final Function<Integer, SqsMessageListener> sqsMessageListenerFunc =
+                    getSqsMessageListenerFunction(listenerKey, sqsMessageListenerProperties, rateLimiterName,
+                            finalWorkerNodeCheckFunc, listenerName, messageHandlerRateLimiterName,
+                            listenerEnabledProperty, waitTimeInSeconds);
 
             validate(sqsMessageListenerProperties);
 
@@ -173,6 +160,34 @@ public class SqsMessageListenerInitializer {
                     sqsMessageListenerProperties.getMaximumNumberOfMessagesKey(),
                     sqsMessageListenerProperties.getScheduleRunIntervalKey(), propertyFunc);
         }, e -> e instanceof RuntimeException ex ? ex : new RuntimeException(e));
+    }
+
+    private Function<Integer, SqsMessageListener> getSqsMessageListenerFunction(
+            String listenerKey, SqsMessageListenerProperties sqsMessageListenerProperties, String rateLimiterName,
+            WorkerNodeCheckFunc finalWorkerNodeCheckFunc, String listenerName, String messageHandlerRateLimiterName,
+            String listenerEnabledProperty, Integer waitTimeInSeconds) {
+
+        return c -> SqsMessageListener
+            .builder()
+            .sqsSyncClient(sqsSyncClient)
+            .messageHandlerFactory(messageHandlerFactory)
+            .executorService(sqsCommonProperties.isUseCommonThreadPool() ? commonExecutorService.executorService() :
+                    createExecutorService(sqsMessageListenerProperties.getThreadPoolSize()))
+            .rateLimiterName(!StringUtils.isEmpty(rateLimiterName) ? rateLimiterName : null)
+            .maximumNumberOfMessagesKey(sqsMessageListenerProperties.getMaximumNumberOfMessagesKey())
+            .semaphore(new Semaphore(1))
+            .propertyReaderFunction(propertyFunc)
+            .syncSqsMessageClient(syncSqsMessageClient)
+            .workerNodeCheck(finalWorkerNodeCheckFunc)
+            .listenerName(!StringUtils.isEmpty(listenerName) ? String.format("%s_%d", listenerName, c) :
+                    String.format("%s_%d", listenerKey, c))
+            .messageHandlerRateLimiter(!StringUtils.isEmpty(messageHandlerRateLimiterName) ?
+                    messageHandlerRateLimiterName : null)
+            .statusProperty(!StringUtils.isEmpty(listenerEnabledProperty) ? listenerEnabledProperty : null)
+            .waitTimeInSeconds(waitTimeInSeconds != null && waitTimeInSeconds > 0 ? waitTimeInSeconds :
+                    DEFAULT_WAIT_TIME_IN_SECONDS)
+            .queueUrl(sqsMessageListenerProperties.getQueueUrl())
+            .build();
     }
 
     private Integer getLongPollingInterval(SqsMessageListenerProperties sqsMessageListenerProperties) {
@@ -272,7 +287,7 @@ public class SqsMessageListenerInitializer {
                 checkForUpdates();
                 this.lastCheckedTime = startTime;
             }
-            Utils.executeUsingLock(lock.readLock(), () -> sqsMessageListeners.stream()
+            executeUsingLock(lock.readLock(), () -> sqsMessageListeners.stream()
                     .map(this::submitJobToListener)
                     .forEach(this::waitForCompletion));
         }
@@ -284,7 +299,7 @@ public class SqsMessageListenerInitializer {
                 LOGGER.info("Number of listeners have changed for {} from {} to {}", this.listenerName,
                         this.sqsMessageListeners.size(), numberOfListeners);
 
-                Utils.executeUsingLock(lock.writeLock(), () -> {
+                executeUsingLock(lock.writeLock(), () -> {
                     this.sqsMessageListeners = IntStream.range(0, numberOfListeners).boxed().map(sqsMessageListenerFunc)
                             .collect(Collectors.toList());
                     this.semaphore = new Semaphore(numberOfListeners);
@@ -308,7 +323,7 @@ public class SqsMessageListenerInitializer {
             try {
                 future._2().get();
             } catch (final InterruptedException e) {
-                Utils.handleInterruptedException(e, () -> {});
+                handleInterruptedException(e, () -> {});
             } catch (final ExecutionException e) {
                 final Exception ex = (Exception) e.getCause();
 
@@ -330,7 +345,7 @@ public class SqsMessageListenerInitializer {
                     return Tuple.of(false, CompletableFuture.completedFuture(null));
                 }
             } catch (final InterruptedException ex) {
-                return Utils.handleInterruptedException(ex, () -> Tuple.of(false, CompletableFuture
+                return handleInterruptedException(ex, () -> Tuple.of(false, CompletableFuture
                         .completedFuture(null)));
             }
         }
@@ -350,7 +365,7 @@ public class SqsMessageListenerInitializer {
         if(!CollectionUtils.isEmpty(errorList)) {
             logErrorMessageToConsole(errorList);
 
-            throw new ValidationException(Utils.constructJson(Map.of(
+            throw new ValidationException(constructJson(Map.of(
                     "message", "Following fields have not been populated",
                     "fields", errorList
             )));

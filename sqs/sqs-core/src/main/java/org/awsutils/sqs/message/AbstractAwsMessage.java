@@ -4,7 +4,6 @@ import org.awsutils.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -65,9 +64,11 @@ public abstract class AbstractAwsMessage<T> implements AwsMessage {
 
     private void validateMessageType() {
         try {
+            //noinspection rawtypes
             LOGGER.debug("Sqs Message Type: " + Enum.valueOf((Class) messageEnumType, messageType));
         } catch (final IllegalArgumentException e) {
-            LOGGER.error(MessageFormat.format("The messageType [{0}] does not match any constant defined in the Enum [{1}]", this.messageType, messageEnumType.getSimpleName()), e);
+            LOGGER.error("The messageType [{}] does not match any constant defined " +
+                    "in the Enum [{}]", this.messageType, messageEnumType.getSimpleName(), e);
 
             throw e;
         }
