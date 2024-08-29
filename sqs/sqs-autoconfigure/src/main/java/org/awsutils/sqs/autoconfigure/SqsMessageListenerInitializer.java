@@ -35,14 +35,24 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.awsutils.common.util.Utils.*;
+import static org.awsutils.common.util.Utils.constructJson;
+import static org.awsutils.common.util.Utils.executeFunctionWithNoReturn;
+import static org.awsutils.common.util.Utils.executeUsingLock;
+import static org.awsutils.common.util.Utils.handleInterruptedException;
 
 @SuppressWarnings({"SpringFacetCodeInspection", "SpringJavaAutowiredFieldsWarningInspection", "unused", "ClassWithTooManyFields"})
 @Configuration
@@ -79,15 +89,16 @@ public class SqsMessageListenerInitializer {
     private static final String SQS_MESSAGE_LISTENER_KEY = "sqsMessageListener_{0}";
 
 
-    public SqsMessageListenerInitializer(final SqsMessageListenerListProperties sqsMessageListenerListProperties,
-                                         final SqsCommonProperties sqsCommonProperties,
-                                         final ApplicationContext applicationContext,
-                                         final SqsConfig.SqsPropertyFunc1<String, Integer> propertyFunc,
-                                         final MessageHandlerFactory messageHandlerFactory,
-                                         final SyncSqsMessageClient syncSqsMessageClient,
-                                         final SqsClient sqsSyncClient,
-                                         final SqsListenerScheduleConfig schedulingConfigurer,
-                                         final Environment environment, AwsEnvironmentProperties awsEnvironmentProperties) {
+    public SqsMessageListenerInitializer(
+            final SqsMessageListenerListProperties sqsMessageListenerListProperties,
+            final SqsCommonProperties sqsCommonProperties,
+            final ApplicationContext applicationContext,
+            final SqsConfig.SqsPropertyFunc1<String, Integer> propertyFunc,
+            final MessageHandlerFactory messageHandlerFactory,
+            final SyncSqsMessageClient syncSqsMessageClient,
+            final SqsClient sqsSyncClient,
+            final SqsListenerScheduleConfig schedulingConfigurer,
+            final Environment environment, AwsEnvironmentProperties awsEnvironmentProperties) {
 
         this.sqsMessageListenerListProperties = sqsMessageListenerListProperties;
         this.sqsCommonProperties = sqsCommonProperties;
